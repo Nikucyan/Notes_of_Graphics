@@ -2,10 +2,15 @@
 
 This repo hosts my notes and some homeworks in computer graphics. These courses are basically from GAMES (Graphics and Mixed Environment Seminar) and Taichi Graphics Course. The major topics are rendering and physics-based animations.
 
+
+
 Following notebooks are updating.
 
-- GAMES103 - Physics-Based Animation (Lecturer: Huamin Wang)
+- *GAMES103 - Physics-Based Animation* (Lecturer: Huamin Wang)
 	[Course Site](http://games-cn.org/games103/) | [Bilibili](https://www.bilibili.com/video/BV12Q4y1S73g) 
+- UPDATING
+
+
 
 ---
 
