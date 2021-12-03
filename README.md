@@ -6,7 +6,7 @@ This repo hosts my notes and some homeworks in computer graphics. These courses 
 
 Following notebooks are updating.
 
-- *GAMES103 - Physics-Based Animation* (Lecturer: Huamin Wang)
+- [*GAMES103 - Physics-Based Animation*](https://github.com/Nikucyan/Notes_of_Graphics/blob/main/GAMES103/GAMES103.pdf) (Lecturer: Huamin Wang)
 	[Course Site](http://games-cn.org/games103/) | [Bilibili](https://www.bilibili.com/video/BV12Q4y1S73g) 
 - UPDATING
 
