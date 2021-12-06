@@ -1,5 +1,7 @@
 # Notes_of_Graphics
 
+<!--[Webpage]()-->
+
 This repo hosts my notes and some homeworks in **computer graphics**. These courses are basically from *GAMES (Graphics and Mixed Environment Seminar)* and *Taichi Graphics Course*. The major topics are **rendering** and **physics-based animations**.
 
 
@@ -7,7 +9,7 @@ This repo hosts my notes and some homeworks in **computer graphics**. These cour
 Following notebooks are updating.
 
 - [*GAMES103 - Physics-Based Animation*](https://nikucyan.github.io/sources/Notebooks/Graphics/GAMES103.html) (Lecturer: Huamin Wang)
-	[Course Site](http://games-cn.org/games103/) | [Bilibili](https://www.bilibili.com/video/BV12Q4y1S73g) 
+	[Homework Assignments](https://github.com/Nikucyan/Notes_of_Graphics/blob/main/GAMES103/Homework_Assignments/GAMES103_Homework.md) | [Course Site](http://games-cn.org/games103/) | [Bilibili](https://www.bilibili.com/video/BV12Q4y1S73g) 
 - UPDATING
 
 
