@@ -1,5 +1,7 @@
 # GAMES103 - Intro to Physics-Based Animation
 
+[![](https://img.shields.io/badge/Main%20Page-%20%20-blueviolet)](https://nikucyan.github.io/) [![](https://img.shields.io/badge/Repo-%20%20-blue)](https://github.com/Nikucyan/Notes_of_Graphics/tree/main/GAMES103) [![](https://img.shields.io/badge/HW-%20%20Codes-yellow)](https://github.com/Nikucyan/Notes_of_Graphics/tree/main/GAMES103/Homework_Assignments)
+
 (Based on Unity, C# lang)
 
 > Huamin Wang (games103@style3D.com)	[Video](https://www.bilibili.com/video/BV12Q4y1S73g); [Lecture site](http://games-cn.org/games103/)
@@ -854,7 +856,7 @@ In practice, we update the same state var $\vb{s = \{ v,x},\boldsymbol{\omega},\
 
 
 
-# Lecture 4 Rigid Body Contacts (Lab 1)
+# Lecture 4 Rigid Body Contacts 
 
 ## Particle Collision Detection and Response
 
@@ -1391,7 +1393,247 @@ vanilla Jocobi method ($\alpha = 1$) has a tight convergence req on $\vb{A}$: Di
 
 ## Bending and Locking Issues
 
+### The Bending Spring Issue
+
+A bending spring offers little resistance when cloth is nearly planar, since its length barely changes.
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207150345778.png" alt="image-20211207150345778" style="zoom:50%;" />
+
+### A Dihedral Angle Model
+
+Every vertex of the 4 will be under a force as a function of $\theta$: $\vb{f}_i  = f(\theta) \vb{u}_i$ 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207150527413.png" alt="image-20211207150527413" style="zoom:50%;" />
+
+- $\vb{u}_1$ and $\vb{u}_2$ should be in the normal directions $\vb{n}_1$ & $\vb{n}_2$ 
+- Bending doesn’t stretch the edge $\vb{u}_4 - \vb{u}_3$  should be orthogonal to the edge (in the span of $\vb{n}_1$ & $\vb{n}_2$) 
+- Newton: $\vb{u}_1 + \vb{u}_2 + \vb{u}_3 + \vb{u}_4 = 0$, means $\vb{u}_3 $ & $\vb{u}_4$ are in the span of $\vb{n}_1$ & $\vb{n}_2$ 
+
+**Conclusion**:
+
+- $\vb{u}_1 = \|\vb{E}\|\frac{\vb{N}_1}{\|\vb{N}_1\|^2}$ 
+- $\vb{u}_2 = \|\vb{E}\|\frac{\vb{N}_2}{\|\vb{N}_2\|^2}$
+- $\mathbf{u}_{3}=\frac{\left(\mathbf{x}_{1}-\mathbf{x}_{4}\right) \cdot \mathbf{E}}{\|\mathbf{E}\|} \frac{\mathbf{N}_{1}}{\left\|\mathbf{N}_{1}\right\|^{2}}+\frac{\left(\mathbf{x}_{2}-\mathbf{x}_{4}\right) \cdot \mathbf{E}}{\|\mathbf{E}\|} \frac{\mathbf{N}_{2}}{\left\|\mathbf{N}_{2}\right\|^{2}}$ 
+- $\mathbf{u}_{4}=-\frac{\left(\mathbf{x}_{1}-\mathbf{x}_{3}\right) \cdot \mathbf{E}}{\|\mathbf{E}\|} \frac{\mathbf{N}_{1}}{\left\|\mathbf{N}_{1}\right\|^{2}}-\frac{\left(\mathbf{x}_{2}-\mathbf{x}_{3}\right) \cdot \mathbf{E}}{\|\mathbf{E}\|} \frac{\mathbf{N}_{2}}{\left\|\mathbf{N}_{2}\right\|^{2}}$ 
+
+$\vb{N}_1 = (\vb{x}_1 - \vb{x}_3)\times(\vb{x}_1 - \vb{x}_4)$ ;  $\vb{N}_2 = (\vb{x}_2 - \vb{x}_4)\times(\vb{x}_2-\vb{x}_3)$  (Cross prod tells the dir. (for normal should be normalized) )
+
+${E} = \vb{x}_4 - \vb{x}_3$ 
+
+**Force**:
+
+- Planar Case: $\mathbf{f}_{\mathbf{i}}=k \frac{\|\mathbf{E}\|^{2}}{\left\|\mathbf{N}_{1}\right\|+\left\|\mathbf{N}_{2}\right\|} \sin \left(\frac{\pi-\theta}{2}\right) \mathbf{u}_{i}$   (The magnitude of the cross product tells the area ($\|\vb{N}_i\|$))
+- Non-planar Case: $\mathbf{f}_{\mathrm{i}}=k \frac{\|\mathbf{E}\|^{2}}{\left\|\mathbf{N}_{1}\right\|+\left\|\mathbf{N}_{2}\right\|}\left(\sin \left(\frac{\pi-\theta}{2}\right)-\sin \left(\frac{\pi-\theta_{0}}{2}\right)\right) \mathbf{u}_{i}$  (The initial angle is $\theta_0$ at rest, planar case $\theta_0 = 180^{\circ}$)
+
+Explicit Derivative is difficult to complete / No energy
+
+### A Quadratic Bending Model
+
+2 assumptions: planar case (OK for cloth); little stretching (mainly bending)
+
+<img src="C:/Users/TR/AppData/Roaming/Typora/typora-user-images/image-20211207154104161.png" alt="image-20211207154104161" style="zoom:50%;" />
+
+**Energy function**: (vector * matrix * vector^T^) ($\vb{I}$ is 3x3 identity)
+$$
+E(\mathbf{x})=\frac{1}{2}\left[\begin{array}{llll}
+\mathbf{x}_{0} & \mathbf{x}_{1} & \mathbf{x}_{2} & \mathbf{x}_{3}
+\end{array}\right] \mathbf{Q}\left[\begin{array}{l}
+\mathbf{x}_{0} \\
+\mathbf{x}_{1} \\
+\mathbf{x}_{2} \\
+\mathbf{x}_{3}
+\end{array}\right];\quad
+\vb{Q} = \frac{3}{A_0+A_1} \vb{qq}^{\mathrm{T}}\in \R^{12\times 12};\quad
+\vb{q} = \begin{bmatrix}
+\left(\cot \theta_{1}+\cot \theta_{3}\right) \vb{I} \\
+\left(\cot \theta_{0}+\cot \theta_{2}\right) \vb{I} \\
+\left(-\cot \theta_{0}-\cot \theta_{1}\right) \vb{I} \\
+\left(-\cot \theta_{2}-\cot \theta_{3}\right) \vb{I} \end{bmatrix}\in \R ^{12\times3}\\
+\Rightarrow E(\vb{x}) = \frac{3\|\vb{q}^{\mathrm{T}}\vb{x}\|^2}{2(A_0 + A_1)}; \text{ and } 
+E(\vb{x}) = 0 \text{ when triangles are flat (co-planar)}
+$$
+Actually finding the laplacian (/ curl), when flat, no curl => $E(\vb{x}) = 0$ 
+
+$\vb{Q}$ is a constant matrix => The function is quadratic 
+
+**Pros & Cons**
+
+- Easy to implement (even in implicit method)
+  $$
+  \vb{f(x)} = -\grad E(\vb{x}) = -\vb{Q} \begin{bmatrix}\vb{x}_0 \\ \vb{x}_1\\ \vb{x}_2 \\ \vb{x}_3\end{bmatrix}
+  \quad \vb{H(x)} = \frac{\partial ^2 E(\vb{x})}{\partial \vb{x}^2} = \vb{Q}
+  $$
+
+- No longer valid if stretches much; Not suitable if the rest config is not planar -> (projective dynamics model / cubic shell model)
+
+### The Locking Issue
+
+In the mass-spring / other bending models, assuming *cloth planar deformation* and *cloth bending deformation* are **independent**
+
+In zero bending case: LHS - OK; RHS - For **stiff spring** NO (Locking Issue) => short of **DoFs**. 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207161346501.png" alt="image-20211207161346501" style="zoom:50%;" />
+
+For a manifold mesh, Euler formula: `#edges = 3#vertices - 3 - #boundary_edges`
+
+If edges are all hard constraints: `DoFs = 3 + #boundary_edges`
+
+=> no perfect solution
+
+## Shape Matching
+
+..
 
 
-## Co-rotational FEM
 
+# Lecture 6 Constraint Approaches: PBD / PD / …
+
+## Strain Limiting and Position Based Dynamics
+
+### The Stiffness Issue
+
+Real-world fabric *resist strongly* to stretching
+
+But in simulation, only *increasing the stiffness* can cause: (More expensive / time-costing)
+
+- *Explicit* integrators - **Unstable**
+
+  -> *Smaller timesteps* and *more computational time*
+
+- Linear systems invloved in *implicit* integrators will be **ill-conditioned**
+
+  -> *More iter* and *computational time*
+
+#### A Single Spring
+
+If a spring is infinitely stiff -> Length = const
+
+Def a constraint func: $\phi (\vb{x}) = \|\vb{x}_i - \vb{x}_j\| -L = 0$ (Rest length $L$) 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207171930711.png" alt="image-20211207171930711" style="zoom:67%;" />
+
+Def a proj func: suppose in a $\R^6$ space for a pos of $\vb{x}$ want to move into a rational area (in blue, with boundary $\delta \boldsymbol{\Omega}$) with a shortest path: want the projection
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207172245723.png" alt="image-20211207172245723" style="zoom: 67%;" />
+$$
+\left\{\mathbf{x}_{i}^{\text {new }}, \mathbf{x}_{j}^{\text {new }}\right\}=\operatorname{argmin} \frac{1}{2}\left\{m_{i}\left\|\mathbf{x}_{i}^{\text {new }}-\mathbf{x}_{i}\right\|^{2}+m_{j}\left\|\mathbf{x}_{j}^{\text {new }}-\mathbf{x}_{j}\right\|^{2}\right\}\\
+\Downarrow\text{such that }\phi(\vb{x}) = 0\\
+\left\{
+\begin{aligned}
+\vb{x}^{\text{new}}&\leftarrow \text{Projection}(\vb{x})\\
+\mathbf{x}_{i}^{\text {new }} &\leftarrow \mathbf{x}_{i}-\frac{m_{j}}{m_{i}+m_{j}}\left(\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|-L\right) \frac{\mathbf{x}_{i}-\mathbf{x}_{j}}{\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|} \\
+\mathbf{x}_{j}^{\text {new }} &\leftarrow \mathbf{x}_{j}+\frac{m_{i}}{m_{i}+m_{j}}\left(\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|-L\right) \frac{\mathbf{x}_{i}-\mathbf{x}_{j}}{\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|}
+\end{aligned}\right.\\
+\phi\left(\mathbf{x}^{\text {new }}\right)=\left\|\mathbf{x}_{i}^{\text {new }}-\mathbf{x}_{j}^{\text {new }}\right\|-L=\left\|\mathbf{x}_{i}-\mathbf{x}_{j}-\mathbf{x}_{i}+\mathbf{x}_{j}+L\right\|-L=0
+$$
+The 2 new points’ substraction equals the original length => satisfying the constraint
+
+By default $m_i = m_j$, but can also set $m_i = \infty$ for stationary nodes (can be just ignored)
+
+#### Multiple Springs
+
+##### Gauss-Seidel Approach
+
+Approach every spring sequentially in a certain order (needs a lot of iter to converge)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207173051472.png" alt="image-20211207173051472" style="zoom:50%;" />
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207173152018.png" alt="image-20211207173152018" style="zoom: 80%;" />
+
+- Cannot ensure the satisafction of every constraint. More iter give much closer results (to the constraint)
+- More similar to the *stochastic gradient descent* (in ML, with spec order)
+- The order mattrers => cause *bias* and affect *convergence*
+
+##### Jocabi Approach
+
+Projects all edges **simultaneously** (good for *parallization*) and then **linearly blend** the results
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207173546431.png" alt="image-20211207173546431" style="zoom:80%;" />
+
+sum up all and update together with a weighted average.
+
+- Lower convergence rate
+- More iter give better results
+
+### Position Based Dynamics (PBD)
+
+Based on the *proj func*, similar to shape matching
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207174356898.png" alt="image-20211207174356898" style="zoom:80%;" />
+
+- $\vb{x}$ & $\vb{v}$ update as simple particle system (similar to Shape matching in rigid body collision)
+- PBD: Add constraints
+  - $\vb{x}$: use Gauss-Seidel / Jocobi /… to find the projection
+  - $\vb{v}$: use new $\vb{x}$ to find 
+
+**Properties**:
+
+- The stiffness behavior is subject to non-physical factors
+  - Iteration num (More iter, slower convergence, less stiffer)
+  - Mesh resolution (Fewer vertices, faster convergence, stiffer)
+- The velocity update following projection is important to dynamic effects
+- Not only use in springs, but triangles, volumes, …
+
+**Pros & Cons**:
+
+> (Usually in 3D softwares)
+
+- Pros:
+  - Parallelable on GPUs (PhysX from NVIDIA)
+  - Easy to implement
+  - Fast in low res (Less than 1000 vertices)
+  - Generic, can handle other coupling and constraints (including fluids)
+- Cons:
+  - Not physically correct (no acc sol, stiffness related to meshes account and iter num)
+  - Low performance in high res
+    - Hierarchical approaches (From low to high res. But causes oscillation and other issues) 
+    - Acceleration approaches (Chebyshev, …)
+
+### Strain Limiting
+
+Some normal updates + strain limiting (corrections)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207203039808.png" alt="image-20211207203039808" style="zoom:80%;" />
+
+e.g.: The constrain is not strictly equal to rest length $L$ but some constraints ($\sigma$ - stretching ratio as a limit)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207203146606.png" alt="image-20211207203146606" style="zoom: 50%;" />
+$$
+\vb{x}^{\text{new}} \leftarrow \text{Projection}(\vb{x})\\
+\sigma \leftarrow \frac{1}{L}\|\vb{x}_i-\vb{x}_j \|\\
+\sigma \leftarrow \min(\max (\sigma,\sigma^{\min}), \sigma^{\max})\quad \in[\sigma^{\min}, \sigma ^{\max}]\\
+\left\{\begin{aligned}
+\mathbf{x}_{i}^{\text {new }} &\leftarrow \mathbf{x}_{i}-\frac{m_{j}}{m_{i}+m_{j}}\left(\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|-\sigma_{0} L\right) \frac{\mathbf{x}_{i}-\mathbf{x}_{j}}{\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|}\\
+\mathbf{x}_{j}^{\text {new }} &\leftarrow \mathbf{x}_{j}-\frac{m_{j}}{m_{i}+m_{j}}\left(\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|-\sigma_{0} L\right) \frac{\mathbf{x}_{i}-\mathbf{x}_{j}}{\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|}
+\end{aligned}\right.\\
+\text{PBD: }\sigma\equiv 1;\quad \text{No limits: }\sigma^{\min}, \sigma^{\max} \leftarrow \infty
+$$
+Can be used to simulate some cloth whose stiffness increases when being stretched heavily.
+
+The constraints can be used for reducing oscillation for FEM / …
+
+### Triangle Area Limit
+
+Limit the triangle area. Define a scaling factor first $s = \sqrt{ \min(\max(A,A^{\min}),A^{\max})/A}$  (Mass center no change)
+$$
+\left\{\mathbf{x}_{i}^{\text {new }}, \mathbf{x}_{i}^{\text {new }}, \mathbf{x}_{k}^{\text {new }}\right\}=\operatorname{argmin}\frac{1}{2}\left\{m_{i}\left\|\mathbf{x}_{i}^{\text {new }}-\mathbf{x}_{i}\right\|^{2}+m_{j}\left\|\mathbf{x}_{j}^{\text {new }}-\mathbf{x}_{j}\right\|^{2}+m_{j}\left\|\mathbf{x}_{k}^{\text {new }}-\mathbf{x}_{k}\right\|^{2}\right\}
+$$
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207204422565.png" alt="image-20211207204422565" style="zoom: 67%;" />
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207204545942.png" alt="image-20211207204545942" style="zoom:67%;" />
+
+**Properties**:
+
+- **Avoiding instability and artifacts** due to *large deformation*
+
+- Useful for **nonlinear effects** (*Biphasic* way)
+
+  <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211207204745741.png" alt="image-20211207204745741" style="zoom: 50%;" /> 
+
+- Help address the **locking issue**
+
+## Projective Dynamics
+
+
+
+## Constrained Dynamics
