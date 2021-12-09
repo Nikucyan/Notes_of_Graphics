@@ -4432,11 +4432,11 @@ Given $q^n$:
 
 ​	Step 1: Advection: (Solve intuitive formula) => in Lag (trivial), in Euler (not trivial)
 
-​		$q^n = \text{advect}(v^n, \Delta t, q^n)$ 
+​		$q^{n+1} = \text{advect}(v^n, \Delta t, q^n)$  
 
 ​		$\tilde v = \text{advect}(v^{n},\Delta t, v^n)$
 
-​	Step 2: Applying forces:
+​	Step 2: Applying forces: (The term of viscosity could be neglected when simulate gas; gravity can be neglected when the gas has similar density as air)
 
 ​		$\tilde{\tilde{v}} = \tilde{v}+\Delta t(g+\nu\laplacian \tilde v)$
 
@@ -4494,6 +4494,11 @@ To compute $\partial q/\partial x$
 <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211209003840801.png" alt="image-20211209003840801" style="zoom:67%;" />
 $$
 \left\{
+\begin{aligned}
+v_{i, j}&=\left[\frac{v_{x_{i-1 / 2, j}}+v_{x_{i+1 / 2, j}}}{2}, \frac{v_{y_{i, j-1 / 2}}+v_{y_{i, j+1 / 2}}}{2}\right] \\
+v_{i+1 / 2, j}&=\left[v_{x_{i+1 / 2, j}}, \quad \frac{v_{y_{i, j-1 / 2}}+v_{y_{i, j+1 / 2}}+v_{y_{i+1, j-1 / 2}}+v_{y_{i+1, j+1 / 2}}}{4}\right]\\
+v_{i, j+1 / 2}&=\left[\frac{v_{y_{i-1 / 2, j}}+v_{y_{i+1 / 2, j}}+v_{y_{i-1 / 2, j+1}}+v_{y_{i+1 / 2, j+1}}}{4}, v_{y_{i, j+1 / 2}}\right]
+\end{aligned}
 \right.
 $$
 For a row x col grid (3x3) storage:
@@ -4517,15 +4522,186 @@ $$
 = \frac{\partial f}{\partial t} + v\ \cdot \grad f
 $$
 
+#### Material Derivative of Vectors  
 
+If $\vb{q}$ is a vector $\vb{q} = [q_x, q_y, q_z]^{\mathrm{T}}$ 
+$$
+\frac{\mathrm{D} \vb{q}}{\mathrm{D} t}=\frac{\partial \vb{q}}{\partial t}+v \cdot \grad \vb{q} =\frac{\partial\vb q}{\partial t}+\vb{v}:
+\left[\begin{aligned}
+\left[\begin{array}{l}
+\frac{\partial q_{x}}{\partial x} \\
+\frac{\partial q_{y}}{\partial x} \\
+\frac{\partial q_{z}}{\partial x}
+\end{array}\right]  \\
+\left[\begin{array}{l}
+\frac{\partial q_{x}}{\partial y} \\
+\frac{\partial q_{y}}{\partial y} \\
+\frac{\partial q_{z}}{\partial y}
+\end{array}\right]\\
+\left[\begin{array}{l}
+\frac{\partial q_{x}}{\partial z} \\
+\frac{\partial q_{y}}{\partial z} \\
+\frac{\partial q_{z}}{\partial z}
+\end{array}\right]
+\end{aligned}
+\right]=\frac{\partial \vb q}{\partial t}+v_{x}\left[\begin{array}{c}
+\frac{\partial q_{x}}{\partial x} \\
+\frac{\partial q_{y}}{\partial x} \\
+\frac{\partial q_{z}}{\partial x}
+\end{array}\right]+v_{y}\left[\begin{array}{c}
+\frac{\partial q_{x}}{\partial y} \\
+\frac{\partial q_{y}}{\partial y} \\
+\frac{\partial q_{z}}{\partial y}
+\end{array}\right]+v_{z}\left[\begin{array}{c}
+\frac{\partial q_{x}}{\partial z} \\
+\frac{\partial q_{y}}{\partial z} \\
+\frac{\partial q_{z}}{\partial z}
+\end{array}\right]=\frac{\partial \vb q}{\partial t}+\left[\begin{array}{l}
+v_{x} \frac{\partial q_{x}}{\partial x}+v_{y} \frac{\partial q_{x}}{\partial y}+v_{z} \frac{\partial q_{x}}{\partial z} \\
+v_{x} \frac{\partial q_{y}}{\partial x}+v_{y} \frac{\partial q_{y}}{\partial y}+v_{z} \frac{\partial q_{y}}{\partial z} \\
+v_{x} \frac{\partial q_{z}}{\partial x}+v_{y} \frac{\partial q_{z}}{\partial y}+v_{z} \frac{\partial q_{z}}{\partial z}
+\end{array}\right] =
+\left[\begin{array}{l}
+\frac{\partial q_{x}}{\partial t}+v \cdot \nabla q_{x} \\
+\frac{\partial q_{y}}{\partial t}+v \cdot \nabla q_{y} \\
+\frac{\partial q_{z}}{\partial t}+v \cdot \nabla q_{z}
+\end{array}\right]
+$$
+For velocity (self-advection)
+$$
+\frac{\mathrm{D} \vb{v}}{\mathrm{D} t}=\frac{\partial \vb{q}}{\partial t}+v \cdot \grad \vb{v} = \left[\begin{array}{l}
+\frac{\partial q_{x}}{\partial t}+v \cdot \grad v_{x} \\
+\frac{\partial q_{y}}{\partial t}+v \cdot \grad v_{y} \\
+\frac{\partial q_{z}}{\partial t}+v \cdot \grad v_{z}
+\end{array}\right]
+$$
 
 ### Quantity Advection
 
+In Eulerian view, quantities flow with the velocity field for $\frac{\mathrm{D} {q}}{\mathrm{D} t}=\frac{\partial {q}}{\partial t}+v \cdot \grad {q} = 0$ 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211209105154349.png" alt="image-20211209105154349" style="zoom:50%;" />
+
+#### Attempt 1: Finite Difference 
+
+$$
+\frac{q_{i}^{n+1}-q_{i}^{n}}{\Delta t}+v^{n} \cdot \frac{q_{i+1}^{n}-q_{i-1}^{n}}{2 \Delta x}=0 \Rightarrow q_{i}^{n+1}=q_{i}^{n}-\Delta t v^{n} \cdot \frac{q_{i+1}^{n}-q_{i-1}^{n}}{2 \Delta x}
+$$
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211209105638323.png" alt="image-20211209105638323" style="zoom:67%;" />
+
+1-D Advection: **Unconditionally Unstable** w/. FTCS
+
+#### Attempt 2: Semi-Lagrangian
+
+$q^{n+1} = q^n$ ? : $ q^{n+1}\left(x^{n+1}\right)=q^{n}\left(x^{n}\right)=q^{n}\left(x^{n+1}-\Delta t v^{n}\right)$ 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211209105843129.png" alt="image-20211209105843129" style="zoom:67%;" />
+
+To find value of $q^n, x^{n+1}-\Delta t v^{n}$: -> **Interpolation**: $q^{n+1}(x^{n+1}) = \text{interpolate}(q^n, x^{n+1}-\Delta t v^{n}) $ 
+
+Usually use Bilinear interpolation in 2D:
+$$
+q = \mathrm{lerp} (a, b, c,d) = \mathrm{lerp} (\mathrm{lerp} (a, b), \mathrm{lerp} (c,d) )  = \frac{D\cdot a + C\cdot b + B\cdot c + A\cdot D}{A  + B + C + D}
+$$
+
+1-D Advection: **Unconditionally Stable** (The peak will stably move forward) => Required $v^n \Delta t < \Delta x$ 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211209110616182.png" alt="image-20211209110616182" style="zoom:67%;" />
+
+Assuming: $v^n \Delta t < \Delta x$:  (equiv to a **velocity-aware one-sided finite difference** form)
+$$
+q_{i}^{n+1}=\frac{\Delta t v^{n}}{\Delta x} q_{i-1}^{n}+\left(1-\frac{\Delta t v^{n}}{\Delta x}\right) q_{i}^{n} = q_i^n - \Delta tv^n \frac{q^n_i - q^n_{i-1}}{\Delta x}
+\Rightarrow \frac{q_{i}^{n+1}-q_{i}^{n}}{\Delta t}+v^{n} \cdot \frac{q_{i}^{n}-q_{i-1}^{n}}{2 \Delta x}=0
+$$
+Problems:
+
+- Increase the numerical dissipation/viscosity
+
+  => Some **better schemes** with less dissipation:
+
+  - Sharper Interpolation (Cubic Hermit spline interpolation)
+  - Better error correction schemes
+    - MacCormack Method
+    - Back and Forth Error Compensation and Correction (BFECC)
+
+- Backtracked “particle” out-of-boundary:
+
+  - Simplest sol: Take the value of the boundary
+
+    <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211209113515073.png" alt="image-20211209113515073" style="zoom:67%;" />
 
 
 ## Projection
 
 ### Poisson’s Equation
 
+#### Possion’s Problem
+
+Want to solve $\frac{\partial v}{\partial t} = -\frac{1}{\rho} \grad p$  s.t. $\div\ v = 0$ 
+
+Use finite difference again:
+$$
+\frac{v_{x_{i-1 / 2, j}}^{n+1}-v_{x_{i-1 / 2, j}}^{n}}{\Delta t}=-\frac{1}{\rho} \frac{p_{i, j}-p_{i-1, j}}{\Delta x}\quad 
+\text{s.t. }\underbrace{\frac{v_{x_{i+1 / 2, j}}^{n+1}-v_{x_{i-1 / 2, j}}^{n+1}}{\Delta x}}_\frac{\partial v_x}{\partial x}
++
+\underbrace{\frac{v_{i, j+1 / 2}^{n+1}-v_{y_{i, j-1 / 2}}^{n+1}}{\Delta x}}_\frac{\partial v_x}{\partial x}
+=0
+$$
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211209115951070.png" alt="image-20211209115951070" style="zoom:67%;" />
+
+The condition will not be divergence free => becomes $-\frac{\Delta t}{\rho}\div\grad \ p = -\div \ v^n$ 
+$$
+-\frac{\Delta t}{\rho}\div\grad \ p = -\div \ v^n\\
+\text{or  } \frac{\Delta t}{\rho} \frac{4 p_{i, j}-p_{i+1, j}-p_{i-1, j}-p_{i, j+1}-p_{i, j-1}}{\Delta x^{2}}=-\frac{v_{i+1 / 2, j}^{n}-v_{x_{i-1 / 2, j}}^{n}+v_{y_{i, j-1 / 2}}^{n}-v_{y_{i, j-1 / 2}}^{n}}{\Delta x}
+$$
+**Another way to achieve Possion’s problem:**
+
+- Want: $\frac{\partial v}{\partial t} = -\frac{1}{\rho} \grad p$  s.t. $\div\ v = 0$ 
+- Discretize the pressure equation in time: $v^{n+1} - v^{n} = -\frac{\Delta t}{\rho} \grad p$  s.t. $\div\ v = 0$ 
+- Apply divergence operator $\div $ on both sides: $-\div\ v^n =-\frac{\Delta t}{\rho} \div \grad\ p$
+
+#### Pressure Solve
+
+- For every grid: One unknown $p_{i,j}$
+
+- For every grid: One equation: $\frac{\Delta t}{\rho} \frac{4 p_{i, j}-p_{i+1, j}-p_{i-1, j}-p_{i, j+1}-p_{i, j-1}}{\Delta x^{2}}=-\frac{v_{i+1 / 2, j}^{n}-v_{x_{i-1 / 2, j}}^{n}+v_{y_{i, j-1 / 2}}^{n}-v_{y_{i, j-1 / 2}}^{n}}{\Delta x}$
+
+- Require only a linear solver: $Ap =-d$
+
+- All pressure are solved than to update velocity: $v^{n+1}_{x_{i-1/2,j}} = v^{n}_{x_{i-1/2,j}} - \frac{\Delta t}{\rho}\frac{p_{i,j}-p_{i-1,j}}{\Delta x}$ 
+
+  But velocity values are more than pressure values => introducing boundary conditions
+
 ### Boundary Conditions  
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211209152406791.png" alt="image-20211209152406791" style="zoom:50%;" />
+
+- **Free Surface (Dirichlet)**
+
+  - $p = 0$ for void grids
+
+- **Solid Wall (Neumann)**
+
+  - $v^{n+1}\cdot n= v^{\text{solid}}\cdot n$ or $v^{n+1}_x = v^{\text{solid}}_x,\ v^{n+1}_y = v^{\text{solid}}_y$ 
+
+  - For solid grids:
+
+    $v_{x}^{\text {solid }}=v_{x_{i-1 / 2, j}}^{n+1}=v_{x_{i-1 / 2, j}}^{n}-\frac{\Delta t}{\rho} \frac{p_{i, j}-p_{i-1, j}}{\Delta x} \Rightarrow p_{i-1,j} = p_{i,j} - \frac{\rho\Delta x}{\Delta t }\left(v^n_{x_{i-1/2 ,j}} - v^{\text{solid}}_x \right)$ 
+
+#### Boundary Conditions in Possion’s Problem
+
+- Dirichlet: $p_{i,j+1} = 0$
+
+- Neumann: $p_{i-1,j} = p_{i,j} - \frac{\rho \Delta x}{\Delta t} \left(v^n_{x_{i-1/2,j}}-v^{\text{solid}}_x \right)$ 
+
+- The Possion’s equation with boundaries:
+  $$
+  \frac{\Delta t}{\rho} \frac{3 p_{i, j}-p_{i+1, j}-p_{i, j-1}}{\Delta x^{2}}=-\frac{v_{x_{i+1 / 2, j}}^{n}-v_{x}^{\text {solid }}+v_{y_{i, j-1 / 2}}^{n}-v_{y_{i, j-1 / 2}}^{n}}{{\Delta x}}
+  $$
+
+To solve $Ap= -d$ (linear solvers (see [Lec. 9](https://nikucyan.github.io/sources/Notebooks/Graphics/Taichi_Graphics.html#Linear_Solvers))) 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211209153331497.png" alt="image-20211209153331497" style="zoom:67%;" />
+
+
 
