@@ -10,6 +10,8 @@ Following notebooks are updating.
 
 - [*GAMES103 - Physics-Based Animation*](https://nikucyan.github.io/sources/Notebooks/Graphics/GAMES103.html) (Lecturer: Huamin Wang)
 	[Homework Assignments](https://github.com/Nikucyan/Notes_of_Graphics/blob/main/GAMES103/Homework_Assignments/GAMES103_Homework.md) | [Course Site](http://games-cn.org/games103/) | [Bilibili](https://www.bilibili.com/video/BV12Q4y1S73g) 
+- [*Taichi Graphic Course S1 / GAMES201 - Advanced Physics Engine*](https://nikucyan.github.io/sources/Notebooks/Graphics/Taichi/Taichi_Graphics.html) (Lecturer: Tiantian Liu / Yuanming Hu)
+	[Course GitHub](https://github.com/taichiCourse01/taichiCourse01/) | [Bilibili](https://www.bilibili.com/medialist/play/1779922645?business=space_series&business_id=337716&desc=1)
 - UPDATING
 
 
