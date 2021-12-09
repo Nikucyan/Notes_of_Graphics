@@ -4699,7 +4699,7 @@ $$
   \frac{\Delta t}{\rho} \frac{3 p_{i, j}-p_{i+1, j}-p_{i, j-1}}{\Delta x^{2}}=-\frac{v_{x_{i+1 / 2, j}}^{n}-v_{x}^{\text {solid }}+v_{y_{i, j-1 / 2}}^{n}-v_{y_{i, j-1 / 2}}^{n}}{{\Delta x}}
   $$
 
-To solve $Ap= -d$ (linear solvers (see [Lec. 9](https://nikucyan.github.io/sources/Notebooks/Graphics/Taichi_Graphics.html#Linear_Solvers))) 
+To solve $Ap= -d$ (linear solvers (see [Lec. 9](https://nikucyan.github.io/sources/Notebooks/Graphics/Taichi_Graphics.html#linear-solvers))) 
 
 <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211209153331497.png" alt="image-20211209153331497" style="zoom:67%;" />
 
