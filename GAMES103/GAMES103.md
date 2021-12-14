@@ -1141,7 +1141,7 @@ $$
 
 #### Structured Spring Networks
 
-<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211130164711386.png" alt="image-20211130164711386" style="zoom:50%;" /> <img src="C:/Users/TR/AppData/Roaming/Typora/typora-user-images/image-20211130164742643.png" alt="image-20211130164742643" style="zoom:50%;" />
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211130164711386.png" alt="image-20211130164711386" style="zoom:50%;" /> <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211130164742643.png" style="zoom:50%;" />
 
 #### Unstructured Spring Networks
 
@@ -1149,7 +1149,7 @@ $$
 
 -> the edges into spring networks (usually in cloth simulations)
 
-<img src="C:/Users/TR/AppData/Roaming/Typora/typora-user-images/image-20211130165041811.png" alt="image-20211130165041811" style="zoom:50%;" /> Blue lines for bending resistance (every neighboring triangle pair)
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211130165041811.png" style="zoom:50%;" /> Blue lines for bending resistance (every neighboring triangle pair)
 
 ##### Triangle Mesh Representation
 
@@ -1634,6 +1634,263 @@ $$
 
 ## Projective Dynamics
 
+### Main Idea
 
+Instead of using projections to update $\vb{x}$ directly as in PBD, projective dynamics uses **projection** to define a **quadratic energy** (identical to spring energy, but have 2 intermediate results $\vb{x}_{e,i}^{\text{new}}$ & $\vb{x}_{e,j}^{\text{new}}$)
+$$
+E(\vb{x}) = \sum_{e=\{i,j\}} \frac{k}{2} \left\|(\vb{x}_i - \vb{x}_j) - (\vb{x}^{\text{new}}_{e,i} - \vb{x}^{\text{new}}_{e,j})\right\|^2 
+=\sum_{e=\{i,j\}} \frac{k}{2}\left\| \|\vb{x}_i - \vb{x}_j\|\frac{\vb{x}_{i} - \vb{x}_{j}}{\|\vb{x}_{i} - \vb{x}_{j}\|} - L_e\frac{\vb{x}_{i} - \vb{x}_{j}}{\|\vb{x}_{i} - \vb{x}_{j}\|}\right\|^2 
+= \sum_{e=\{i,j\}} \frac{k}{2} \left(\|\vb{x}_i - \vb{x}_j\| -L_e\right)^2
+\\
+\{\vb{x}^{\text{new}}_{e,i} - \vb{x}^{\text{new}}_{e,j}\} = \text{Projection}_e (\vb{x}_i,\vb{x}_j) \text{ for every edge } e
+$$
+Finding the corresponding **forces**: (assumption: $(\vb{x}_{e,i}^{\text{new}} - \vb{x}_{e,j}^{\text{new}}) = \text{const}$) (identical to spring force)
+$$
+\vb{f}_i = -\grad _iE(\vb{x}) = -k\sum_{e:\ i\in e} (\vb{x}_i - \vb{x}_j)  - (\vb{x}_{e,i}^{\text{new}} - \vb{x}_{e,j}^{\text{new}}) 
+= -k\sum_{e:\ i\in e}\left(\|\vb{x}_i - \vb{x}_j\| -L_e\right)\frac{\vb{x}_{i} - \vb{x}_{j}}{\|\vb{x}_{i} - \vb{x}_{j}\|}
+$$
+=> althought the results are the same, the **Hessians** are different
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211214000539781.png" alt="image-20211214000539781" style="zoom: 67%;" />
+$$
+\begin{aligned}
+E(\vb{x}) =& \frac{k}{2} \left\|(\vb{x}_0 - \vb{x}_1) - (\vb{x}^{\text{new}}_{0,0} - \vb{x}^{\text{new}}_{0,1})\right\|^2  + \frac{k}{2} \left\|(\vb{x}_0 - \vb{x}_2) - (\vb{x}^{\text{new}}_{1,0} - \vb{x}^{\text{new}}_{1,2})\right\|^2 + \frac{k}{2} \left\|(\vb{x}_0 - \vb{x}_3) - (\vb{x}^{\text{new}}_{2,0} - \vb{x}^{\text{new}}_{2,3})\right\|^2 +\\
+& \frac{k}{2} \left\|(\vb{x}_1 - \vb{x}_2) - (\vb{x}^{\text{new}}_{3,1} - \vb{x}^{\text{new}}_{3,2})\right\|^2  + \frac{k}{2} \left\|(\vb{x}_2 - \vb{x}_3) - (\vb{x}^{\text{new}}_{4,2} - \vb{x}^{\text{new}}_{4,3})\right\|^2 \\
+
+\end{aligned}
+$$
+
+$$
+\vb{f}_0
+ = \left[k\left(\mathbf{x}_{0,0}^{\text {new }}-\mathbf{x}_{0,1}^{\text {new }}\right)-k\left(\mathbf{x}_{0}-\mathbf{x}_{1}\right)\right]+\left[k\left(\mathbf{x}_{1,0}^{\text {new }}-\mathbf{x}_{1,2}^{\text {new }}\right)-k\left(\mathbf{x}_{0}-\mathbf{x}_{2}\right)\right]+  \left[k\left(\mathbf{x}_{2,0}^{\text {new }}-\mathbf{x}_{2,3}^{\text {new }}\right)-k\left(\mathbf{x}_{0}-\mathbf{x}_{3}\right)\right]
+$$
+
+$$
+\vb{H} = \begin{bmatrix}
+3k\vb{I} & -k\vb{I} & -k\vb{I} & -k\vb{I}\\
+-k\vb{I} & 2k\vb{I} & -k\vb{I} & \\
+-k\vb{I} & -k\vb{I} & 3k\vb{I} & -k\vb{I}\\
+-k\vb{I} & & -k\vb{I} & 2k\vb{I}
+\end{bmatrix}
+$$
+
+The Hessian is the 2nd order derivative of energies to the vertices. The coefficients (of the diagonal) can be regarded as the numbers of the springs the vertices connected (3, 2, 3, 3 for vertex 0-3) 
+
+This matrix is simple and constant $\vb{A = }\frac{1}{\Delta t^2} \vb{M+H}$
+
+=> Applying implicit integration
+
+### Simulation by PD
+
+Combination fo the projectiive dynamics with implicit time integration. Use a direct LU solver and can factorize $\vb{A}$ once (usually the most expensive part is the factorization and here the costs can reduce) 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211214002319156.png" alt="image-20211214002319156" style="zoom:67%;" />
+
+### Principles
+
+Newton’s Method calculate $\vb{H}$ as Hessian
+$$
+\underbrace{\left(\frac{1}{\Delta t^2}\vb{M + H}\right)}_{\text{Hessian}} \Delta \vb{x} =  \underbrace{-\frac{1}{\Delta t^2} \vb{M (\vb{x}^{(k)}-\vb{x}^{[0]} - \Delta t\vb{v^{[0]}}) + \vb{f}(\vb{x}^{(k)})} }_{\text{Negative gradient}}
+$$
+But in practice, $\vb{H}$ usually not calculated exactly (The performance dep. on how well the Hessian is approx., identity matrix can even be used (but convergence takes longer))
+
+- Truncating the Hessian to make it p.d. (Lec. 5)
+- A (magical) diagonal approx (Lab 2)
+- A const matrix by PD (Lec. 6)
+
+### Pros and Cons
+
+**Pros**
+
+- Have theoretical solution with physical meaning
+- Fast on CPUs with a direct solver (one factorization)
+- Fast convergence in the first few iter
+
+**Cons**
+
+- Slow on GPUs 
+- Slow convergence over time (fails to consider Hessian caused by projection) (suffering from high stiffness)
+- Cannot handle constraint changes easily (contacts / remeshing due to fracture / …)
 
 ## Constrained Dynamics
+
+This method is suitable for **strong constraints / contacts / articulated rigid bodies (ragdoll animation) …**
+
+> A critical problem: what if constraints/forces are very stiff (or even infinitely stiff)
+>
+> example: multiple rigid bodies: human body can be regarded as several rigid bodies with very strong constraints (joints)
+
+Compliant constraint: $\phi_e(\vb{x}) = \|\vb{x}_{ei}-\vb{x}_{ej}\| - L_e$  
+
+The energy can be rewrited:
+$$
+E(\vb{x}) = \sum_e \frac{1}{2} k {\underbrace{(\| \vb{x}_{ei} - \vb{x}_{ej} -L_e \|)}_{\phi_e}} ^2 = \frac{1}{2}\vb{\Phi}^{\mathrm{T}}(\vb{x}) \vb{C}^{-1} \vb{\Phi}(\vb{x})\\
+\vb{f(x)} = -\grad E = -\left( \frac{\partial E}{\partial \vb{\Phi}}\frac{\partial \vb{\Phi}}{\partial \vb{x}}\right)^{\mathrm{T}} = -\vb{J}^{\mathrm{T}}\vb{C}^{-1}\vb{\Phi} = \vb{J}^{\mathrm{T}}\vb{\lambda}
+$$
+Let $N$ be the number of vertices and $E$ be the number of constraints ($\vb{C}$ - compliant matrix, $\vb{J}$ - Jacobian, $\vb{\lambda}$ - Lagrangian multipliers (Dual variables))
+$$
+\vb\Phi(\vb{x})\in \R^{E} \ , \begin{bmatrix}\phi_0\\ \phi_1 \\ \vdots \\ \phi_E\end{bmatrix}\ ;\quad
+\vb{C} = \begin{bmatrix}\frac{1}{k} & & \\ & \frac{1}{k } & \\ & & \ddots\end{bmatrix}\in \R^{E\times E}\ ;\quad
+\vb{J } = \frac{\partial \vb{\Phi}}{\partial \vb{x}}  \in \R^{E\times 3N}\ ;\quad
+\vb{\lambda} = -\vb{C} ^{-1} \vb{\Phi}\in \R^{E}
+$$
+By implicit Integration: (2 sets of var: primal var $\vb{x}$ (or $\vb{v = \dot {x}}$) and the dual var $\lambda$)
+$$
+\left\{\begin{aligned}
+&\vb{Mv}^{\text{new}} - \Delta t \vb{J}^{\mathrm{T}}\vb{\lambda}^{\text{new}} = \vb{Mv}\\
+&\vb{C\lambda} ^{\text{new}} = -\vb{\Phi}^{\text{new}} \approx - \vb{\Phi} - \vb{J}(\vb{x}^{\text{new}} - \vb{x}) \approx -\vb{\Phi} - \Delta t\ \vb{J} \vb{v}^{\text{new}}
+\end{aligned}\right.\\
+\Rightarrow 
+\begin{bmatrix}\vb{M} & -\Delta t \vb{J}^{\mathrm{T}} \\ \Delta t\vb{J} & \vb{C} \end{bmatrix}
+\begin{bmatrix}\vb{v}^{\text{new}} \\ \vb{\lambda}^{\text{new}} \end{bmatrix} = 
+\begin{bmatrix}\vb{Mv} \\ - \vb{\Phi} \end{bmatrix}
+$$
+
+- Method 1: Solve by a direct solver together (**primal-dual fashion**): The matrix should be p.d. => need to make p.d.
+
+- Method 2: Reduce the system by Schur complement and solve $\vb{\lambda}^{\text{new}}$ first (not easy to reduce / not always sparse)
+  $$
+  \begin{gathered}
+  \left(\Delta t^{2} \mathbf{J M}^{-1} \mathbf{J}^{\mathrm{T}}+\mathbf{C}\right) \lambda^{\text {new }}=-\boldsymbol{\Phi}-\Delta t \mathbf{v} \\
+  \mathbf{v}^{\text {new }} \leftarrow \mathbf{v}+-\Delta t \mathbf{M}^{-1} \mathbf{J}^{\mathrm{T}} \boldsymbol{\lambda}^{\text {new }}
+  \end{gathered}
+  $$
+  If reduce the $\lambda$ first -> get the implicit method formula
+
+Infinite stiffness in this case could be solved by $\vb{C}\rightarrow 0$ (smaller $\vb{C}$ makes the system better)  
+
+
+
+# Lecture 7 Linear Finite Element Method (FEM)
+
+## Linear Finite Element Method (FEM)
+
+### The Linear FEM Assumption
+
+In a nutshell, linear FEM assumes that for any point $\vb{X} $ in the reference triangles, its deformed correspondence is $\vb{x = FX + c}$ (“Linear” for this linear formula)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211214162153805.png" alt="image-20211214162153805" style="zoom:80%;" />
+
+For any vectors between 2 points we can use $\vb{F}$ to convert it from ref to deformed state:
+$$
+\vb{x}_{ba} = \vb{x}_b - \vb{x}_a = \vb{FX}_b +\vb{c} - \vb{FX}_a-\vb{c} = \vb{FX}_{ba}\\
+$$
+For example for edge 10 & 20: (indep on translation)
+$$
+\vb{FX}_{10} = \vb{x}_{10}\ ; \ \vb{FX}_{20} = \vb{x}_{20} \Rightarrow \vb{F} = \begin{bmatrix}\vb{x}_{10} & \vb{x}_{20} \end{bmatrix} \begin{bmatrix}\vb{X}_{10} & \vb{X}_{20} \end{bmatrix}^{-1}
+$$
+Problem: $\vb{F}$ is related to deformation but contains rotations (want to also reduce rotation)
+
+### Green Strain
+
+Ideally, we need a tensor to describe shape deformation only. Recall that **SVD** gives $\vb{F=UDV}^{\mathrm{T}}$, where only $\vb{V}^{\mathrm{T}}$ and $\vb{D}$ are relevant to deformation.
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211109165409060.png" alt="image-20211109165409060" style="zoom:70%;" />
+
+Get rid of $\vb{U}$ as: $\vb{G}$ (**Green Strain**, symmetric, only 3 var)  ($\vb{F}^{\mathrm{T}}\vb{F} = \vb{VD}\cancel{\vb{U}^{\mathrm{T}}\vb{U}}\vb{DV}^{\mathrm{T}} $) 
+$$
+\vb{G} = \frac{1}{2} (\vb{F}^{\mathrm{T}}\vb{F} - \vb{I}) = \frac{1}{2} (\vb{VD}^{2}\vb{V}^{\mathrm{T}} - \vb{I}) = \begin{bmatrix}\varepsilon_{uu}& \varepsilon_{uv}\\\varepsilon_{uv} & \varepsilon_{vv} \end{bmatrix}
+$$
+
+- If no deformation: $\vb{G=0}$; if deformation increases, $\|\vb{G}\|$ increases
+- 3 deformation modes: $\varepsilon_{uu},\varepsilon_{uv}, \varepsilon_{vv}$ 
+- $\vb{G}$ is rotaion irrelavent (if adding rotaion $\vb{R}$ then deformation grad is $\vb{RF}$ but $\vb{G}$ is the same)  
+
+### Strain Energy Density Function
+
+Consider the energy density per ref area: $W(\vb{G})$:
+
+**Total energy**:
+$$
+E=\int W(\vb{G})\ \mathrm{d}A = A^{\text{ref}}W(\varepsilon_{uu},\varepsilon_{uv}, \varepsilon_{vv})
+$$
+The **Saint Venant-Kirchhoff Model (StVK)**: ($\lambda$ and $\mu$ are Lamé parameters)
+$$
+W\left(\varepsilon_{u u}, \varepsilon_{v v}, \varepsilon_{u v}\right)=\frac{1}{2}\left(\varepsilon_{u u}+\varepsilon_{v v}\right)^{2}+\mu\left(\varepsilon_{u u}^{2}+\varepsilon_{v v}^{2}+2 \varepsilon_{u v}^{2}\right)
+$$
+
+$$
+\frac{\partial W}{\partial \mathbf{G}}=\left[\begin{array}{cc}
+\frac{\partial W}{\partial \varepsilon_{u u}} & \frac{1}{2} \frac{\partial W}{\partial \varepsilon_{u v}} \\
+\frac{1}{2} \frac{\partial W}{\partial \varepsilon_{u v}} & \frac{\partial W}{\partial \varepsilon_{v v}}
+\end{array}\right]=\left[\begin{array}{cc}
+2 \mu \varepsilon_{u u}+\lambda \varepsilon_{u u} & 2 \mu \varepsilon_{u v} \\
+2 \mu \varepsilon_{u v} & 2 \mu \varepsilon_{v v}+\lambda \varepsilon_{v v}
+\end{array}\right]=2 \mu \mathbf{G}+\lambda \operatorname{trace}(\mathbf{G}) \mathbf{I}=\mathbf{S}
+$$
+
+(Trace is the diagonal sum; $\vb{S}$ - Second Piola-Kirchhoff stress tensor (some form of force density))
+
+**Force**:
+$$
+\mathbf{f}_{i}=-\left(\frac{\partial E}{\partial \mathbf{x}_{i}}\right)^{\mathrm{T}}=-A^{\mathrm{ref}}\left(\frac{\partial W}{\partial \mathbf{x}_{i}}\right)^{\mathrm{T}}=-A^{\mathrm{ref}}\left(\frac{\partial W}{\partial \varepsilon_{u u}} \frac{\partial \varepsilon_{u u}}{\partial \mathbf{x}_{i}}+\frac{\partial W}{\partial \varepsilon_{v v}} \frac{\partial \varepsilon_{v v}}{\partial \mathbf{x}_{i}}+\frac{\partial W}{\partial \varepsilon_{u v}} \frac{\partial \varepsilon_{u v}}{\partial \mathbf{x}_{i}}\right)^{\mathrm{T}}
+$$
+The $\frac{\partial W}{\partial \varepsilon_{ij}}$ are solved before, we concentrate more on the next part
+
+Recall that: $\mathbf{F}=\left[\begin{array}{ll}
+\mathbf{x}_{10} & \mathbf{x}_{20}
+\end{array}\right]\left[\begin{array}{ll}
+\mathbf{r}_{10} & \mathbf{r}_{20}
+\end{array}\right]^{-1}=\left[\begin{array}{ll}
+\mathbf{x}_{10} & \mathbf{x}_{20}
+\end{array}\right]\left[\begin{array}{ll}
+a & b \\
+c & d
+\end{array}\right]=\left[\begin{array}{ll}
+a \mathbf{x}_{10}+c \mathbf{x}_{20} & b \mathbf{x}_{10}+d \mathbf{x}_{20}
+\end{array}\right]$ 
+
+By def
+$$
+\mathbf{G}=\frac{1}{2}\left(\mathbf{F}^{\mathrm{T}} \mathbf{F}-\mathbf{I}\right)=\left[\begin{array}{cc}
+\frac{1}{2}\left(a \mathbf{x}_{10}+c \mathbf{x}_{20}\right)^{\mathrm{T}}\left(a \mathbf{x}_{10}+c \mathbf{x}_{20}\right)-\frac{1}{2} & \frac{1}{2}\left(a \mathbf{x}_{10}+c \mathbf{x}_{20}\right)^{\mathrm{T}}\left(b \mathbf{x}_{10}+d \mathbf{x}_{20}\right) \\
+\frac{1}{2}\left(a \mathbf{x}_{10}+c \mathbf{x}_{20}\right)^{\mathrm{T}}\left(b \mathbf{x}_{10}+d \mathbf{x}_{20}\right) & \frac{1}{2}\left(b \mathbf{x}_{10}+d \mathbf{x}_{20}\right)^{\mathrm{T}}\left(b \mathbf{x}_{10}+d \mathbf{x}_{20}\right)-\frac{1}{2}
+\end{array}\right]
+$$
+
+$$
+\Rightarrow
+\left\{\begin{aligned}
+&\frac{\partial \varepsilon_{u u}}{\partial \mathbf{x}_{1}}=a\left(a \mathbf{x}_{10}+c \mathbf{x}_{20}\right)^{\mathrm{T}} \quad \frac{\partial \varepsilon_{v v}}{\partial \mathbf{x}_{1}}=b\left(b \mathbf{x}_{10}+d \mathbf{x}_{20}\right)^{\mathrm{T}} \quad \frac{\partial \varepsilon_{u v}}{\partial \mathbf{x}_{1}}=\frac{1}{2} a\left(b \mathbf{x}_{10}+d \mathbf{x}_{20}\right)^{\mathrm{T}}+\frac{1}{2} b\left(a \mathbf{x}_{10}+c \mathbf{x}_{20}\right)^{\mathrm{T}}\\
+&\frac{\partial \varepsilon_{u u}}{\partial \mathbf{x}_{2}}=c\left(a \mathbf{x}_{10}+c \mathbf{x}_{20}\right)^{\mathrm{T}} \quad \frac{\partial \varepsilon_{v v}}{\partial \mathbf{x}_{2}}=d\left(b \mathbf{x}_{10}+d \mathbf{x}_{20}\right)^{\mathrm{T}} \quad \frac{\partial \varepsilon_{u v}}{\partial \mathbf{x}_{2}}=\frac{1}{2} c\left(b \mathbf{x}_{10}+d \mathbf{x}_{20}\right)^{\mathrm{T}}+\frac{1}{2} d\left(a \mathbf{x}_{10}+c \mathbf{x}_{20}\right)^{\mathrm{T}}
+\end{aligned} \right.
+$$
+
+(the method is too complex => simplification)
+$$
+\begin{aligned}
+\mathbf{f}_{1}&=-A^{\mathrm{ref}}\left(\frac{\partial W}{\partial \varepsilon_{u u}} \frac{\partial \varepsilon_{u u}}{\partial \mathbf{x}_{1}}+\frac{\partial W}{\partial \varepsilon_{v v}} \frac{\partial \varepsilon_{v v}}{\partial \mathbf{x}_{1}}+\frac{\partial W}{\partial \varepsilon_{u v}} \frac{\partial \varepsilon_{u v}}{\partial \mathbf{x}_{1}}\right)^{\mathrm{T}}\\
+&=-A^{\mathrm{ref}}\left(\frac{\partial W}{\partial \varepsilon_{u u}} a\left(a \mathbf{x}_{10}+c \mathbf{x}_{20}\right)^{\mathrm{T}}+\frac{\partial W}{\partial \varepsilon_{v v}} b\left(b \mathbf{x}_{10}+d \mathbf{x}_{20}\right)^{\mathrm{T}}+\frac{\partial W}{\partial \varepsilon_{u v}} \frac{1}{2} a\left(b \mathbf{x}_{10}+d \mathbf{x}_{20}\right)^{\mathrm{T}}+\frac{\partial W}{\partial \varepsilon_{u v}} \frac{1}{2} b\left(a \mathbf{x}_{10}+c \mathbf{x}_{20}\right)^{\mathrm{T}}\right)\\
+&=-A^{\mathrm{ref}}\left(\left[\begin{array}{cc}
+a \mathbf{x}_{10}+c \mathbf{x}_{20} & b \mathbf{x}_{10}+d \mathbf{x}_{20}
+\end{array}\right]\left[\begin{array}{cc}
+\frac{\partial W}{\partial \varepsilon_{u u}} a+\frac{\partial W}{\partial \varepsilon_{u v}} \frac{1}{2} b \\
+\frac{\partial W}{\partial \varepsilon_{u v}} \frac{1}{2} a+\frac{\partial W}{\partial \varepsilon_{v v}} b
+\end{array}\right]\right)\\
+&=-A^{\operatorname{ref}}
+\underbrace{\left[a \mathbf{x}_{10}+c \mathbf{x}_{20} \quad b \mathbf{x}_{10}+d \mathbf{x}_{20}\right]}_{\text{deformation gradient}}
+\underbrace{\left[\begin{array}{cc}
+\frac{\partial W}{\partial \varepsilon_{u u}} & \frac{1}{2} \frac{\partial W}{\partial \varepsilon_{u v}} \\
+\frac{1}{2} \frac{\partial W}{\partial \varepsilon_{u v}} & \frac{\partial W}{\partial \varepsilon_{v v}}
+\end{array}\right]}_{\text{Second Piola-Kirchhoff Stress}}
+\left[\begin{array}{l}
+a \\
+b
+\end{array}\right]=-A^{\text{ref}} \vb{FS}\begin{bmatrix}a \\ b\end{bmatrix}
+\end{aligned}
+$$
+
+$$
+\Rightarrow [\vb{f}_1\ \ \vb{f}_2] = -A^{\text{ref}}\ \vb{FS}\ [\vb{r}_{10}\ \ \vb{r}_{20}]^{-1}\ ;\quad \vb{f}_0 = -\vb{f}_1 - \vb{f}_2
+$$
+
+For tetrahedron (3D ref -> 3D deformation)
+
+
+
+## Finite Volume Method (FVM)
+
+
+
+## Hyperelastic Models
+
