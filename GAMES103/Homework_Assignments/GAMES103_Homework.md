@@ -123,7 +123,7 @@ Requirement: drag the sphere and have the cloth interactive simulation with the 
 
 1. Implicit Method: [Using [WebGL](https://nikucyan.github.io/sources/Notebooks/Graphics/GAMES103_HW2/Implicit.html)]
 
-   ![Implicit](https://cdn.jsdelivr.net/gh/Nikucyan/Notes_of_Graphics/GAMES103/Homework_Assignments/HW2/Implicit_new.GIF)
+   ![Implicit](https://github.com/Nikucyan/Notes_of_Graphics/blob/main/GAMES103/Homework_Assignments/HW2/Implicit.gif?raw=true)
 
 2. PBD:
 
