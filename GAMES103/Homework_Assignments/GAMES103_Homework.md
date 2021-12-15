@@ -68,7 +68,7 @@ Complete the other script with shape matching method.
 
 **Soft-matter Simulation**
 
-Given: `cloth.unitypackage `(a retangular cloth piece and a sphere). The cloth piece was defaultly set with 21 x 21 =  441 vertices
+Given: `cloth.unitypackage ` (a retangular cloth piece and a sphere). The cloth piece was defaultly set with 21 x 21 =  441 vertices
 
 Requirement: drag the sphere and have the cloth interactive simulation with the sphere
 
@@ -76,13 +76,58 @@ Requirement: drag the sphere and have the cloth interactive simulation with the 
 
 #### 1. Implicit Cloth Solver
 
-1. Initial Setup: For every vertex, apply damping to velocity `v *= damping` and `X[i]~ = X[i] + dt * V[i]`
+1. Initial Setup: 
+
+   For every vertex, apply damping to velocity and/or other initial conditions
+
+2. Gradient Calculation: 
+
+   Compute the gradient `G` by applying both the **gravitaitonal force** and the **spring force**
+
+3. Finishing: (Right after the gradient computation step, by **Jacobi**) 
+
+   Instead of using Newton’s method to solve the nonlinear optimization problem, here the Hessian matrix is considered as a **diagonal** matrix
+
+   The vertices are updated 32 times to ensure the quality
+
+   Finally, calculate the **velocity** and **assign** `X` to `mesh.vertices` 
+
+4. Chebyshev Acceleration: 
+
+   Jacobi with **Chebyshev** semi-iterative method also applies to nonlinear optimization
+
+5. Sphere Collision: In the `Collision_Handling` function
+
+   Calculate the distance from every vertex to the sphere center to detect
+
 
 #### 2. Position-Based Dynamics (PBD)
 
-   
+1. Initial Setup: In `Update` function)Set the PBD solver as a particle system.
 
-   
+   For every vertex, damp the **velocity** and update by gravity. And also update the **position** `x`.
+
+2. Strain Limiting: In `Strain_Limiting` function, in **Jacobi** fashion
+
+   Define 2 **temp arrays** `sum_x[]` and `sum_n[]` to store the sums of vertex **position** updates and vertex **count** updates (Set as 0 initially)
+
+   For every edge `e` connecting `i` and `j` update the sum arrays
+
+   Update the vertex velocity
+
+   (Should be done multiple times)
+
+3. Sphere Collision (Same as implicit method)   
+
+### Results
+
+1. Implicit Method:
+
+   ![Implicit](https://cdn.jsdelivr.net/gh/Nikucyan/Notes_of_Graphics/GAMES103/Homework_Assignments/HW2/Implicit.gif)
+
+2. PBD:
+
+
 
    
 
