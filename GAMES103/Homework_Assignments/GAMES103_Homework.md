@@ -72,7 +72,7 @@ Given: `cloth.unitypackage ` (a retangular cloth piece and a sphere). The cloth 
 
 Requirement: drag the sphere and have the cloth interactive simulation with the sphere
 
-### Tasks [WIP]
+### Tasks 
 
 #### 1. Implicit Cloth Solver
 
