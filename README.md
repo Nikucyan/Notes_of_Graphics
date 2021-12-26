@@ -8,7 +8,7 @@ This repo hosts my notes and some homeworks in **computer graphics**. These cour
 
 Following notebooks are updating.
 
-- [GAMES101 - Overview of Computer Graphics](https://nikucyan.github.io/sources/Notebooks/Graphics/GAMES101) (Lecturer: Prof. Lingqi Yan) 
+- [*GAMES101 - Overview of Computer Graphics*](https://nikucyan.github.io/sources/Notebooks/Graphics/GAMES101) (Lecturer: Prof. Lingqi Yan) 
 	[Corse Site](https://sites.cs.ucsb.edu/~lingqi/teaching/games101.html) | [Bilibili](https://www.bilibili.com/video/BV1X7411F744)
 
 - [*GAMES103 - Physics-Based Animation*](https://nikucyan.github.io/sources/Notebooks/Graphics/GAMES103.html) (Lecturer: Huamin Wang)
