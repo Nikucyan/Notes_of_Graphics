@@ -121,16 +121,28 @@ Requirement: drag the sphere and have the cloth interactive simulation with the 
 
 ### Results
 
-1. Implicit Method: [Using [WebGL](https://nikucyan.github.io/sources/Notebooks/Graphics/GAMES103_HW2/Implicit.html)]
+1. Implicit Method: [Run on [WebGL](https://nikucyan.github.io/sources/Notebooks/Graphics/GAMES103_HW2/Implicit.html)]
 
    ![Implicit](https://github.com/Nikucyan/Notes_of_Graphics/blob/main/GAMES103/Homework_Assignments/HW2/Implicit_new.GIF?raw=true)
 
-2. PBD:
+2. PBD: [Run on [WebGL](https://nikucyan.github.io/sources/Notebooks/Graphics/GAMES103_HW2_PBD/PBD.html)]
 
 
 
-   
+   ## Lab 3: Bouncy House [WIP]   
 
-   
+**Finite Element Method with StVK** 
+
+### Tasks
+
+#### 1. Basic Tasks
+
+#### 2. Bonus Task
+
+
+
+### Results
+
+
 
 ​      

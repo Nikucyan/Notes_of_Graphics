@@ -1877,7 +1877,7 @@ a \mathbf{x}_{10}+c \mathbf{x}_{20} & b \mathbf{x}_{10}+d \mathbf{x}_{20}
 a \\
 b
 \end{array}\right]=-A^{\text{ref}} \vb{FS}\begin{bmatrix}a \\ b\end{bmatrix}
-\end{aligned}
+\end{aligned}
 $$
 
 $$
@@ -1886,11 +1886,233 @@ $$
 
 For tetrahedron (3D ref -> 3D deformation)
 
-
-
 ## Finite Volume Method (FVM)
 
+> For simple triangle / tetrahedra, FVM is equivalent to linear FEM
 
+FVM considers force calculation in an **integration perspective** other than a differentiation perspective
+
+### Traction and Stress in FVM
+
+#### Basic Ideas in FVM
+
+**General Case**:
+
+<img src="C:/Users/TR/AppData/Roaming/Typora/typora-user-images/image-20211221120056804.png" alt="image-20211221120056804" style="zoom: 67%;" />
+
+- **Traction** $\vb{t}$: The internal force per unit length (area) => the **total force at the interface** is the integral: $\vb{f } = \oint_L \vb{t}\ \mathrm{d}l$ 
+- **Stress tensor $\vb{\sigma}$**: $\vb{t = \sigma n}$ (projection: interface normal -> traction)
+
+**The Triangle Case**: Take the midpoints which will be on the curve to estimate (the force contributes the same to the 3 vertices, the integral is for $\vb{x}_0$) 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211221120134281.png" alt="image-20211221120134281" style="zoom: 50%;" />
+
+- **Force contributed by an element**: $\vb{f}_0 = \oint _L \vb{\sigma n }\ \mathrm{d}l$ (the integral of traction)
+- **Divergence theorem**: $\oint_L \vb{\sigma n}\ \mathrm{d}l + \oint_{L_{20}} \vb{\sigma n}\ \mathrm{d}l + \oint_{L_{10}}\vb{\sigma n}\ \mathrm{d}l = 0$ ($\vb{\sigma}$ is constant within the elem)
+- **Force**: $\vb{f}_0 = -\oint_{L_{20}}\vb{\sigma n}_{20}\ \mathrm{d}l -\oint_{L_{10}}\vb{\sigma n}_{10}\ \mathrm{d}l = -\vb{\sigma} (\frac{\|\vb{x}_{20}\|}{2}\vb{n}_{20} + \frac{\|\vb{x}_{10}\|}{2}\vb{n}_{10})  $  (Only $\sigma$ is unknown)
+
+**In 3D (tetrahedra)**: FVM does the surfacial integral
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211221170657979.png" alt="image-20211221170657979" style="zoom: 67%;" />
+
+- **Force**: 
+  $$
+  \begin{aligned}
+  \mathbf{f}_{0} &=-\oint_{\Omega}^{\sigma} \boldsymbol{n} d A=-\boldsymbol{\sigma}\left(\frac{A_{012}}{3} \mathbf{n}_{012}+\frac{A_{023}}{3} \mathbf{n}_{023}+\frac{A_{031}}{3} \mathbf{n}_{031}\right) \\
+  &=-\frac{\boldsymbol{\sigma}}{3}\left(\frac{\left\|\mathbf{x}_{10} \times \mathbf{x}_{20}\right\|}{2} \frac{\mathbf{x}_{10} \times \mathbf{x}_{20}}{\left\|\mathbf{x}_{10} \times \mathbf{x}_{20}\right\|}+\frac{\left\|\mathbf{x}_{20} \times \mathbf{x}_{30}\right\|}{2} \frac{\mathbf{x}_{20} \times \mathbf{x}_{30}}{\left\|\mathbf{x}_{20} \times \mathbf{x}_{30}\right\|}\right.
+  \left.+\frac{\left\|\mathbf{x}_{30} \times \mathbf{x}_{10}\right\|}{2} \frac{\mathbf{x}_{30} \times \mathbf{x}_{10}}{\left\|\mathbf{x}_{30} \times \mathbf{x}_{10}\right\|}\right) \\
+  &=-\frac{\boldsymbol{\sigma}}{6}\left(\mathbf{x}_{10} \times \mathbf{x}_{20}+\mathbf{x}_{20} \times \mathbf{x}_{30}+\mathbf{x}_{30} \times \mathbf{x}_{10}\right)
+  \end{aligned}
+  $$
+
+#### Different Stresses
+
+The **stress tensor** here: **mapping** from the **interface normal** to the **traction** (but kind of different from FEM)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211221171303566.png" alt="image-20211221171303566" style="zoom:67%;" />
+
+- In FEM: Stress $\vb{S}$, normal $\vb{N}$ and traction $\vb{T}$ are in the **reference** state
+- In FVM: this stress assumes the normal $\vb{n}$ and the traction $\vb{t}$ are in the **deformed** state 
+
+| Output \ Input                             | Interface normal $\vb{N}$ in the *ref* state (Undeformed) | Interface normal $\vb{n}$ in the *current* state (Deformed)  |
+| ------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------ |
+| **Traction in the *ref* state (unformed)** | Second Piola-Kirchhoff stress ($\vb{S}$)                  | -                                                            |
+| **Traction in the *cur* state (formed)**   | First Piola-Kirchhoff stress ($\vb{P}\vb{= FS}$)          | Cauchy Stress ($\vb{\sigma} = \det ^{-1} \vb{(F)PF}^{\mathrm{T}} = \det^{-1}\vb{(F)FSF^{\mathrm{T}}}$) |
+
+($\vb{F}$ - Deformation gradient) 
+
+#### The Finite Volume Method
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211221214405998.png" alt="image-20211221214405998" style="zoom: 67%;" />
+$$
+\begin{aligned}
+\vb{f}_1 &= -\frac{\sigma}{6} (\vb{x}_{01}\times \vb{x}_{21} + \vb{x}_{21} \times \vb{x}_{31} + \vb{x}_{31}\times \vb{x}_{01}) \qquad \ \ \ (\text{Replace $\sigma$  with }\vb{P}\text{ (=> normal)} )
+\\
+&= -\frac{\vb{P}}{6} (\vb{X}_{01} \times \vb{X}_{21} + \vb{X}_{21} \times \vb{X}_{31} + \vb{X}_{31} \times \vb{X}_{01}) \quad (\text{The term including } \vb{X} \text{ is constant => precomputed})
+\\ 
+&= -\frac{\vb{FS}}{6} \vb{b}_1\qquad (\vb{b}_1 \text{ is the constant}) 
+\end{aligned}
+$$
+Second Piola-Kirchhoff Stress: $\vb{S} = \frac{\partial W}{\partial \vb{G}}$ as in previous FEM formulation
+
+=> To find $\vb{b}_1$ (In the figure below, $\vb{X}_1$ will be computed via $\vb{b}_1$) 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211221220647936.png" alt="image-20211221220647936" style="zoom:67%;" />
+
+The dot product of the edge 10 with $\vb{X}_1$ 
+$$
+\begin{aligned}
+\mathbf{X}_{10}^{\mathrm{T}} \mathbf{b}_{1} &=\mathbf{X}_{10}^{\mathrm{T}}\left(\cancel{\mathbf{X}_{01} \times \mathbf{X}_{21}}+\mathbf{X}_{21} \times \mathbf{X}_{31}+\cancel{\mathbf{X}_{31} \times \mathbf{X}_{01}}\right)=\mathbf{X}_{10}^{\mathrm{T}}\left(\mathbf{X}_{21} \times \mathbf{X}_{31}\right) \\
+&=\mathbf{X}_{01}^{\mathrm{T}}\left(\mathbf{X}_{31} \times \mathbf{X}_{21}\right)=6\
+\mathrm{Vol}
+\end{aligned}
+$$
+Meanwhile: $\vb{X}_{20}^{\mathrm{T}}$ & $\vb{X}_{30}^{\mathrm{T}}$ equal to 0
+$$
+\Rightarrow \begin{bmatrix}\vb{X}_{10} & \vb{X}_{20} & \vb{X}_{30} \end{bmatrix}^{\mathrm{T}} \vb{b}_1 = \begin{bmatrix} 6\ \mathrm{Vol} \\ 0 \\  0 \end{bmatrix}\ ;
+\quad
+\begin{bmatrix}\vb{X}_{10} & \vb{X}_{20} & \vb{X}_{30} \end{bmatrix}^{\mathrm{T}} \vb{b}_2 = \begin{bmatrix}  0 \\ 6\ \mathrm{Vol} \\ 0 \end{bmatrix}\ ;
+\quad
+\begin{bmatrix}\vb{X}_{10} & \vb{X}_{20} & \vb{X}_{30} \end{bmatrix}^{\mathrm{T}} \vb{b}_3 = \begin{bmatrix}  0 \\ 0 \\ 6\ \mathrm{Vol}  \end{bmatrix}\\
+\Rightarrow \begin{bmatrix}\vb{b}_{1} & \vb{b}_{2} & \vb{b}_{3} \end{bmatrix} = 6\ \mathrm{Vol}\ \begin{bmatrix}\vb{X}_{10} & \vb{X}_{20} & \vb{X}_{30} \end{bmatrix}^{-\mathrm{T}} 
+ = \frac{1}{\det(\begin{bmatrix}\vb{X}_{10} & \vb{X}_{20} & \vb{X}_{30} \end{bmatrix}^{-1})} \begin{bmatrix}\vb{X}_{10} & \vb{X}_{20} & \vb{X}_{30} \end{bmatrix}^{-\mathrm{T}}
+$$
+
+#### Algorithm (Explicit) 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211221225719287.png" alt="image-20211221225719287" style="zoom: 67%;" />
+
+-> Various material (Heterogeneous materials) / various elastic / …
 
 ## Hyperelastic Models
+
+> **StVK**: cannot handle flips / … (only widely used in graphics)
+>
+> **Hyperelastic**: More used in engineering (material / mechanics /… ) => more general
+
+### Isotropic Materials
+
+#### Isotropic
+
+Force on any direction affects the same (with same behaviors) (-> ansotropic)
+
+$\vb{F}$ - Green Strain -> SVD; $\vb{D} = \lambda_0, \lambda_ 1, \lambda_2$ - **Principal stretches**: the singlar value of $\vb{F}$ 
+$$
+\vb{P(F)} = \vb{P(UDV}^{\mathrm{T}}) = \vb{UP} (\lambda_0 , \lambda_1, \lambda_2) \vb{V}^{\mathrm{T}}
+$$
+
+In many lit, parameterize $\vb{P}(I_{\vb{C}},II_{\vb{C}}, III_{\vb{C}})$ by principal invariants: ($\vb{C} = \vb{U}^{\mathrm{T}}\vb{U}$ is the right Cauchy-Green deformation tensor)
+$$
+I _{\vb{C}} = \trace (\vb{C}) = \lambda_0^2 + \lambda_1^2 + \lambda_2^2 \ ;\quad III_{\vb{C}} = \det (\vb{C}^2)  = \lambda_0^4 +  \lambda_1^4 + \lambda_2^4 \\
+II_\vb{C} = \frac{1}{2} \left(\trace^2(\vb{C}) - \tr(\vb{C}^2)\right) =  \lambda_0^2 \lambda_1^2 +   \lambda_0^2 \lambda_2^2 + \lambda_1^2 \lambda_2^2
+$$
+
+#### Models
+
+- The **Saint Venant-Kirchhoff** model (StVK):
+  $$
+  W=\frac{s_{0}}{2}\left(I_{\mathbf{C}}-3\right)^{2}+\frac{s_{1}}{4}\left(I I_{\mathbf{C}}-2 I_{\mathbf{C}}+3\right)
+  $$
+
+- The **neo-Hookean** model: (More standard model in material mechanics)
+  $$
+  W=s_{0}\left(I I I_{\mathbf{C}}^{-1 / 3} I_{\mathbf{C}}-3\right)+s_{1}\left(I I I_{\mathbf{C}}^{-1 / 2}-1\right)
+  $$
+  Two terms of $W$: left - **Against shearing**; right - **Against bulky change** (volume change) (same as StVK)
+
+- The **Mooney Rivlin** model:
+  $$
+  W=s_{0}\left(I I I_{\mathbf{C}}^{-1 / 3} I_{\mathbf{C}}-3\right)+s_{1}\left(I I I_{\mathbf{C}}^{-1 / 2}-1\right)+s_{2}\left(\frac{1}{2} I I I_{\mathbf{C}}^{-2 / 3}\left(I_{\mathbf{C}}^{2}-I I_{\mathbf{C}}\right)-3\right)
+  $$
+
+- The **Fung** model:
+  $$
+  W=s_{0}\left(I I I_{\mathbf{C}}^{-1 / 3} I_{\mathbf{C}}-3\right)+s_{1}\left(I I I_{\mathbf{C}}^{-1 / 2}-1\right)+s_{2}\left(e^{s_{3}\left(I I I_{\mathbf{C}}^{-1 / 3} I_{\mathbf{C}}-3\right)}-1\right)
+  $$
+
+#### Solving for First PK Stress ($\vb{P}$) 
+
+Use the principal stretch for computation => first P-K stress
+$$
+\vb{P}(\lambda_0,\lambda_1,\lambda_2) = \begin{bmatrix} 
+ \frac{\partial W}{\partial \lambda_0} & & \\
+ & \frac{\partial W}{\partial \lambda_1} & \\
+ & & \frac{\partial W}{\partial \lambda_2} 
+\end{bmatrix}\quad
+\Rightarrow 
+\vb{P} = \vb{UP}(\lambda_0,\lambda_1,\lambda_2) \vb{V}^{\mathrm{T}} 
+$$
+
+### Algorithm
+
+Note: for the same model the first PK in this algorithm should equiv to $\vb{P} = \vb{F}\frac{\partial W}{\partial \vb{G}}$ 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211222113045756.png" alt="image-20211222113045756" style="zoom:67%;" />
+
+### The Limitation of StVK
+
+The compression (with high stress) and flip cannot be handled with StVK model (even get stable in the flipped side) => UNSTABLE
+
+=> Neo Hookean solve the problem
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211222113516604.png" alt="image-20211222113516604" style="zoom:67%;" />
+
+
+# Lecture 8 Linear Finite Element Method II
+
+## Nonlinear Optimization
+
+### Gradient Descent
+
+Solving $\vb{x}^* = \operatorname{argmin} F(\vb{x})$ => The negative gradient dir is the fastest descent dir
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211222114523262.png" alt="image-20211222114523262" style="zoom:50%;" />
+
+#### Algorithm
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211222114657200.png" alt="image-20211222114657200" style="zoom:67%;" />
+
+#### Step Size Adjustment
+
+Linear search methods: Exact line search (solve another optimization problem) & Backtracking line search ($\beta$ is a smaller num (~ 0.3-0.4) -> Wolfe Condition)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211222114751055.png" alt="image-20211222114751055" style="zoom:67%;" />
+
+#### Descent Directions
+
+The dir $\vb{d(x)}$ is descending if a sufficiently small step size $\alpha$ exists for: $F(\vb{x}) > F(\vb{x+ \alpha d(x)} )$ (at least descending)
+
+ie. $-\grad F(\vb{x})\cdot \vb{d(x)}>0$ (the same side with the negative dir)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211222211524599.png" alt="image-20211222211524599" style="zoom:67%;" />
+
+With line search. use any search dir as long as it’s descending $F(\vb{x}^{(0)}) > F(\vb{x}^{(1)}) > F(\vb{x}^{(2)}) > F(\vb{x}^{(3)}) > \dots$ 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211222211906481.png" alt="image-20211222211906481" style="zoom:67%;" />
+
+#### Descent Methods
+
+- **Gradient descent**: $\vb{d(x)} = -\grad F(\vb{x}) \Rightarrow -\grad F(\vb{x}) \cdot (-\grad F(\vb{x})) >0$  
+
+- **Newton’s method** (if the Hessian is always positive definite): 
+  $$
+  \vb{d(x)} = -\left( \frac{\partial ^2 F(\vb{x})}{\partial \vb{x}^2}\right)^{-1} \grad F(\vb{x}) \Rightarrow -\grad F(\mathbf{x}) \cdot\left(-\left(\frac{\partial^{2} F(\mathbf{x})}{\partial \mathbf{x}^{2}}\right)^{-1} \grad F(\mathbf{x})\right)>0
+  $$
+
+- Any method using a <u>positive definite</u> matrix $\vb{P}$ to modify the gradient yields a descent method:
+  $$
+  \vb{d(x)} = - \vb{P}^{-1} \grad F(\vb{x}) \Rightarrow -\grad F(\vb{x}) \cdot \left(-\vb{P}^{-1} \grad F(\vb{x}) \right)>0
+  $$
+
+A unified descent framework:
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211222212628550.png" alt="image-20211222212628550" style="zoom:67%;" />
+
+Differences between these methods:
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211222212648030.png" alt="image-20211222212648030" style="zoom:67%;" />
+
+**Total cost = Per-iter cost * Num of iter**
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211222212838495.png" alt="image-20211222212838495" style="zoom:50%;" />
 
