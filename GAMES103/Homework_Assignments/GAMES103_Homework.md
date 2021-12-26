@@ -129,7 +129,7 @@ Requirement: drag the sphere and have the cloth interactive simulation with the 
 
 
 
-   ## Lab 3: Bouncy House [WIP]   
+## Lab 3: Bouncy House [WIP]   
 
 **Finite Element Method with StVK** 
 
