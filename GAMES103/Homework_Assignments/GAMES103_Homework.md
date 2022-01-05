@@ -68,7 +68,7 @@ Complete the other script with shape matching method.
 
 **Soft-matter Simulation**
 
-Given: `cloth.unitypackage ` (a retangular cloth piece and a sphere). The cloth piece was defaultly set with 21 x 21 =  441 vertices
+Given: `cloth.unitypackage` (a retangular cloth piece and a sphere). The cloth piece was defaultly set with 21 x 21 =  441 vertices
 
 Requirement: drag the sphere and have the cloth interactive simulation with the sphere
 
@@ -133,11 +133,25 @@ Requirement: drag the sphere and have the cloth interactive simulation with the 
 
 **Finite Element Method with StVK** 
 
+Given the `.unitypackage` file, containing a house model. Applying **StVK model** for elasticity with **explicit time integration**.
+
 ### Tasks
 
-#### 1. Basic Tasks
+#### 1. Basic Tasks (FVM)
 
-#### 2. Bonus Task
+1. Basic Setup: In the `_Update` function (`Update` calls ten times `_Update`)
+
+   Apply a simple **particle system**. Every vertex has own position `X` and velocity `V` with the **gravity**
+
+   Implement **frictional contact** between every vertex and the floor
+
+2. Edge Matrics:
+
+   Build the `Build_Edge_Matrix` to returns a matrix of a **tetrahedron**
+
+   In the `Start` func, call this function to calculate `inv_Dm`, which the inverse of the ref edge matrix
+
+#### 2. Bonus Task (Hyperelastic)
 
 
 

@@ -2,7 +2,7 @@
 
 [![](https://img.shields.io/badge/Main%20Page-%20%20-blueviolet)](https://nikucyan.github.io/) [![](https://img.shields.io/badge/Repo-%20%20-blue)](https://github.com/Nikucyan/Notes_of_Graphics/tree/main/GAMES103) [![](https://img.shields.io/badge/HW-%20%20Codes-yellow)](https://github.com/Nikucyan/Notes_of_Graphics/tree/main/GAMES103/Homework_Assignments)
 
-(Based on Unity, C# lang)
+(Based on Unity, C#)
 
 > Huamin Wang (games103@style3D.com)	[Video](https://www.bilibili.com/video/BV12Q4y1S73g); [Lecture site](http://games-cn.org/games103/)
 
@@ -1898,7 +1898,7 @@ FVM considers force calculation in an **integration perspective** other than a d
 
 **General Case**:
 
-<img src="C:/Users/TR/AppData/Roaming/Typora/typora-user-images/image-20211221120056804.png" alt="image-20211221120056804" style="zoom: 67%;" />
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211221120056804.png" style="zoom:67%;" />
 
 - **Traction** $\vb{t}$: The internal force per unit length (area) => the **total force at the interface** is the integral: $\vb{f } = \oint_L \vb{t}\ \mathrm{d}l$ 
 - **Stress tensor $\vb{\sigma}$**: $\vb{t = \sigma n}$ (projection: interface normal -> traction)
@@ -2001,9 +2001,9 @@ $$
 \vb{P(F)} = \vb{P(UDV}^{\mathrm{T}}) = \vb{UP} (\lambda_0 , \lambda_1, \lambda_2) \vb{V}^{\mathrm{T}}
 $$
 
-In many lit, parameterize $\vb{P}(I_{\vb{C}},II_{\vb{C}}, III_{\vb{C}})$ by principal invariants: ($\vb{C} = \vb{U}^{\mathrm{T}}\vb{U}$ is the right Cauchy-Green deformation tensor)
+In many lit, parameterize $\vb{P}(I_{\vb{C}},II_{\vb{C}}, III_{\vb{C}})$ by principal invariants: ($\vb{C} = \vb{F}^{\mathrm{F}}\vb{U}$ is the right Cauchy-Green deformation tensor)
 $$
-I _{\vb{C}} = \trace (\vb{C}) = \lambda_0^2 + \lambda_1^2 + \lambda_2^2 \ ;\quad III_{\vb{C}} = \det (\vb{C}^2)  = \lambda_0^4 +  \lambda_1^4 + \lambda_2^4 \\
+I _{\vb{C}} = \trace (\vb{C}) = \lambda_0^2 + \lambda_1^2 + \lambda_2^2 \ ;\quad III_{\vb{C}} = \trace (\vb{C}^2)  = \lambda_0^4 +  \lambda_1^4 + \lambda_2^4 \\
 II_\vb{C} = \frac{1}{2} \left(\trace^2(\vb{C}) - \tr(\vb{C}^2)\right) =  \lambda_0^2 \lambda_1^2 +   \lambda_0^2 \lambda_2^2 + \lambda_1^2 \lambda_2^2
 $$
 
@@ -2116,3 +2116,515 @@ Differences between these methods:
 
 <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211222212838495.png" alt="image-20211222212838495" style="zoom:50%;" />
 
+
+
+# Lecture 9 Collision Handling
+
+## Collision Detection
+
+### Collision Detection Pipeline
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211228113838360.png" alt="image-20211228113838360" style="zoom:67%;" />
+
+- **Broad-Phase**: Remove the pairs which are impossible to collide
+  - SH: Easy to implement; GPU friendly; needs to recompute after updating obj
+  - BVH: More involved; not GPU friendly; update BV to update BVH
+
+- **Narrow-Phase**: Which pairs really collide
+
+### Board-Phase Collision Culling
+
+#### Spatial Hashing (Partitioning)
+
+> Static space division
+
+Spatial partitioning divides the space by a grid and stores objects into grid cells
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211228114157341.png" alt="image-20211228114157341" style="zoom:50%;" />
+
+| Cell 12: $t_4$       | Cell 13: $t_4$       | Cell 14: $t_5$         | Cell 15: $t_5$ |
+| -------------------- | -------------------- | ---------------------- | -------------- |
+| Cell 8: $t_2$        | Cell 9: $t_3$        | Cell 10: $t_3$, $ t_5$ | Cell 11: N/A   |
+| Cell 4: $t_0$, $t_2$ | Cell 5: $t_0$, $t_3$ | Cell 6: $t_3$          | Cell 7: $t_1$  |
+| Cell 0: $t_0$        | Cell 1: N/A          | Cell 2: $t_1$          | Cell 3: $t_1$  |
+
+For example for $t_3$: Cell 5, 6, 9, 10 => other triangles stored in these cells: $t_0$ & $t_5$ => pairs: $t_0t_3$ & $t_3t_5$ and do further detection
+
+For moving objects, just expand the object region (add more)
+
+<img src="C:/Users/TR/AppData/Roaming/Typora/typora-user-images/image-20211228114759191.png" alt="image-20211228114759191" style="zoom:67%;" />
+
+**Optimization** for memory costs: Memory wastes in empty cells and too many meshes should be built in 3D. Instead of allocating memories to cell, build an **object-cell list** and **sort** them
+
+e.g., (not relavent to space)
+
+```
+{0, t_0}; {4, t_0}; {5, t_0}; {2, t_1}; {3, t_1}; {7, t_1}; {4, t_2}; {8, t_2}; {5, t_3}; {6, t_3}; {9, t_3}; {10, t_3}; {12, t_4};  {13, t_4}; {10, t_5}; {14, t_5}; {15, t_5} 
+```
+
+Then sort by cell ID => easy to find out what is stored in each cell
+
+```
+{0, t_0}; {2, t_1}; {3, t_1}; {4, t_0}; {4, t_2}; {5, t_0}; {5, t_3}; {6, t_3}; {7, t_1}; {8, t_2}; {9, t_3}; {10, t_3}; {10, t_5}; {12, t_4};  {13, t_4}; {14, t_5}; {15, t_5} 
+```
+
+**Morton Code**
+
+One question is how to define the cell ID. Using the grid order is not optimal, since it cannot be easily extended and it is lack of locality (LHS). Morton code uses a Z-pattern instead (RHS).
+
+<img src="C:/Users/TR/AppData/Roaming/Typora/typora-user-images/image-20211228164349900.png" alt="image-20211228164349900" style="zoom:67%;" />
+
+#### Bounding Volume Hierarchy (BVH)
+
+Bounding volume hierarchy is built on **geometric/topological proximity** of objects.
+
+##### External Object
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211228170551965.png" alt="image-20211228170551965" style="zoom:67%;" />
+
+The parts that are not like to collide in different boxes => test if box intersection occurs
+
+To find elem potentially in collision with an obj, just traverse the tree:
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211228171141111.png" alt="image-20211228171141111" style="zoom:67%;" />
+
+##### Internal Intersections (Self Collision)
+
+2 procedures in the tree
+
+``` c
+Process_Node(A)
+{	// check if the parental node (A) has self-collision
+ 	For every A’s child: B
+        Process_Node(B)
+    For every A’s children pair <B, C>
+        if B and C intersect
+            Process_Pair(B, C)	// the next precedure
+}
+```
+
+``` c
+Process_Pair(B, C)
+{	// check if the children pair intersects
+    For every B’s child: B’
+    For every C’s child: C’
+        if B’ and C’ intersect
+            Process_Pair(B’, C’)
+}
+```
+
+##### BVH Models
+
+<u>Axis-aligned bounding box (AABB)</u> / Spheres / Oriented bounding box (OBB)
+
+Two AABBs intersect if and only if they intersect in every axis; shperes: need to compute the distance
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211228172043462.png" alt="image-20211228172043462" style="zoom: 50%;" />
+
+### Narrow-Phase Collision Test
+
+#### Discrete Collision Detection (DCD)
+
+> Actually not collision detection but intersection detection
+
+DCD tests if any intersection exists in each state at <u>discrete time instant</u>: $\vb{x}^{[0]}, \vb{x}^{[1]}, \dots$
+
+To a triangle mesh, the basic test is <u>edge-triangle intersection</u> test: easy and robust
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211228173830786.png" alt="image-20211228173830786" style="zoom:67%;" />
+
+(The $t$ means the <u>interpolation value</u> between the points other than time)
+
+##### Tunneling
+
+The difference between collision and intersection detection:
+
+- Intersection detection only considers if the 2 triangles (/…) have intersection at the two discrete time steps
+- Collision detection can consider the penentration
+
+<img src="C:/Users/TR/AppData/Roaming/Typora/typora-user-images/image-20211228174514285.png" alt="image-20211228174514285" style="zoom:50%;" />
+
+**Problem**: The green triangle at state $\vb{x}^{[0]}$ and $\vb{x}^{[1]}$ doesn’t have intersection with the blue one but actually the position relationship changes => tunneling problem (penetrating through each other)
+
+Not usually occurs for bulky objects but can happen for thin surfaces
+
+#### Continuous Collision Detection (CCD)
+
+CCD tests if any intersection exists <u>between two states</u>: $\vb{x}^{[0]}$ and $\vb{x}^{[1]}$ 
+
+To a triangle mesh, there two basic tests: <u>vertex-triangle</u> and <u>edge-edge</u> tests 
+
+**Vertex-Triangle**:
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211228174836931.png" alt="image-20211228174836931" style="zoom:67%;" />
+
+($\vb{x}_{30} = \vb{x}_3 - \vb{x}_{0}$ which is a function about time) 
+
+Need to solve a third order equation (with one variable) => has formulae solution (not recommended, need to solve cubic root) / use binary division (0, 1) and get the first sol
+
+**Edge-Edge**:
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211228212022858.png" alt="image-20211228212022858" style="zoom:67%;" />
+
+**Issues** with CCD:
+
+- <u>Floating-point errors</u>, especially due to root finding of a cubic equation
+  - Buffering epsilons, but that causes <u>false positives</u>
+  - Gaming GPUs often use <u>single floating-point precision</u>
+- <u>Computational costs</u>: more expensive than DCD
+  - Some argue that broad-phase collision culling is the bottleneck
+- Difficulty in implementation
+
+## Continuous Collision Response Approaches
+
+### The Two Continuous Collision Response Approaches
+
+Given the calculated next state $\vb{x}^{[1]}$, we want to update it into $\overline{\vb{x}}^{[1]}$, the path from $\vb{x}^{[0]}$ to $\overline {\vb{x}}^{[1]}$ is intersection-free
+
+- **Interior Point Method**: Use the rest state to the collided state to estimate the every next state (safer)
+  - Slow: far from solution; all vertices; cautiously by small step size
+  - Always succeed
+- **Impact Zone Method**: Use the final point to estimate, then do optimization in the “impact zone” 
+  - Fast: Close to solution; only vertices in collision (impact zones); can take large step sizes
+  - May not succeed
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211229005436625.png" alt="image-20211229005436625" style="zoom: 67%;" />
+
+### Interior Point Methods (Cont.)
+
+#### Log-Barrier Interior Point Methods
+
+For simplicity, just consider the Log-barrier repulsion between 2 vertices (usually in graphics do a cutoff at some distance)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211229010339561.png" alt="image-20211229010338910" style="zoom:67%;" />
+$$
+E(\vb{x}) = -\rho \log\|\vb{x}_{ij}\|\\
+\vb{f}_i(\vb{x}) = -\grad_iE = \rho \frac{\vb{x}_{ij}}{\|\vb{x}_{ij}\|^2}\ ;
+\quad
+\vb{f}_j(\vb{x}) = -\grad_jE = - \rho \frac{\vb{x}_{ij}}{\|\vb{x}_{ij}\|^2}
+$$
+
+#### Implementation
+
+Formulate the problem:
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211229010911256.png" alt="image-20211229010911256" style="zoom: 67%;" />
+$$
+\overline{\vb{x}}^{[1]}\leftarrow \operatorname{argmin} _\vb{x}\left(\frac{1}{2}\|\vb{x-x}^{[1]}\|^2 - \rho\sum\log\|\vb{x}_{ij}\| \right)
+$$
+**Gradient Descent**:
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211229011306261.png" alt="image-20211229011306261" style="zoom:80%;" />
+
+The step size $\alpha$ must be adjusted to ensure that no collision happens on the way. To find $\alpha$, we need collision tests.
+
+### Impact Zone Optimization (Cont.)
+
+The goal of impact zone optimization is to optimize $\vb{x}^{[1]}$ until it becomes intersection-free. (This potentially suffers from the tunneling issue, uncommon) 
+
+$$
+\overline{\vb{x}}^{[1]} \leftarrow \operatorname{argmin}_\vb{x} \frac{1}{2}\|\overline{\vb{x}}-{\vb{x}}^{[1]}\|^2
+$$
+Such that:
+$$
+ \begin{cases}C(\mathbf{x})=-\left(\mathbf{x}_{3}-b_{0} \mathbf{x}_{0}-b_{1} \mathbf{x}_{1}-b_{2} \mathbf{x}_{1}\right) \cdot \mathbf{N} \leq 0 & \text { For each detected vertex-triangle pair } \\ C(\mathbf{x})=-\left(b_{2} \mathbf{x}_{2}+b_{3} \mathbf{x}_{3}-b_{0} \mathbf{x}_{0}-b_{1} \mathbf{x}_{1}\right) \cdot \mathbf{N} \leq 0 & \text { For each detected edge-edge pair }\end{cases}
+$$
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211229012241218.png" alt="image-20211229012241218" style="zoom:67%;" />
+
+The optimizations are always trying to get close to the solution
+
+### Rigid Impact Zones
+
+The rigid impact zone method simply <u>freezes vertices</u> in collision from moving in their pre-collision state. It’s <u>simple and safe</u>, but has <u>noticeable artifacts</u>
+
+Only used when all other methods not work
+
+### A Practical System
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211229012717208.png" alt="image-20211229012717208" style="zoom: 67%;" />
+
+## Untangling Cloth (Discrete)
+
+### Intersection Elimination
+
+> Consider how to <u>eliminate existing intersections</u>, but without using any collision history
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211229013144634.png" alt="image-20211229013144634" style="zoom:67%;" />
+
+Useful when there are already intersections in simulation, due to:
+
+- Past collision handling failures
+- Intense user interaction
+
+In this case, we don’t require the simulation is to always <u>intersection-free</u>
+
+Eliminating <u>cloth-volume</u> and <u>volume-volume</u> intersections is straightforward: simply **pushing vertices/edges in the volume out**
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211229212934397.png" alt="image-20211229212934397" style="zoom: 67%;" />
+
+### Untangling Cloth
+
+<u>Cloth-cloth intersection</u> is complicated (don’t have a clear definition of inside and outside)
+
+- Baraff et al. used flood-fill to segment cloth into <u>regions</u> and decided <u>which region is in intersection</u>. (Cannot handle boundary well, not friendly in GPU)
+
+  <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211229214002651.png" alt="image-20211229214002651" style="zoom:50%;" />
+
+  divide into several regions => which is larger => the smaller part moves to the larger side
+
+- Volino and Magnenat-Thalmann proposed to untangle cloth by reducing the intersection contour
+
+  Their method can handle boundaries, but it doesn’t always work
+
+  <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20211229214433087.png" alt="image-20211229214433087" style="zoom: 67%;" />
+
+
+
+# Lecture 10 Surface Waves
+
+**Two Types of Simulation Approaches**
+
+- **Lagrangian** Approach: Dynamic particles or mesh (Node movement carries physical quantities (mass, velocity, …))
+- **Eulerian** Approach: Static grid or mesh (Grid/Mesh doesn’t move; Stored physical quantities change)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/V4rJQGzKxXwWhCM.png" alt="image-20220104125629085" style="zoom: 67%;" />
+
+## A Height Field Model
+
+### Height Field
+
+In 2D, a (1.5D) height field is a height function $h(x)$ (cannot have 2 $h$ at one position) and the velocity is also a function $u(x)$  (negative -> opposite direction)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220104165850951.png" alt="image-20220104165850951" style="zoom: 50%;" />
+
+The height field and velocity can be represented by:  ($h\cdot u$ means the volume flowing through a position at the unit time)
+$$
+\left\{\begin{aligned}
+&\frac{\mathrm{d}h(x)}{\mathrm{d}t} + \frac{\mathrm{d}(h(x)u(x))}{\mathrm{d}x} = 0\\
+&\frac{\mathrm{d}u(x)}{\mathrm{d}t} = \underbrace{- u(x) \frac{\mathrm{d}u(x)}{\mathrm{d}x}}_{\text{advection}} - \frac{1}{\rho}\frac{\mathrm{d}P(x)}{\mathrm{d}x} + \underbrace{a(x)}_{\text{ext.}}
+\end{aligned}
+\right.
+$$
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220104170150684.png" alt="image-20220104170150684" style="zoom:50%;" />
+
+Ignoring <u>advection</u> and <u>external acceleration</u>, we get a simple form of velocity derivative: ($\rho$ - density; $P(x)$ - pressure)
+$$
+\frac{\mathrm{d}u(x)}{\mathrm{d}t} = -\frac{1}{\rho}\frac{\mathrm{d}P(x)}{\mathrm{d}x} 
+$$
+From $x$ to $x+\mathrm{d}x$: $\mathrm{d}P(x) = P(x+\mathrm{d}x) - P(x)$ => the velocity changes due to the change of pressure (also dep on density)
+
+$u(x)$ increases when $\mathrm{d}P(x)<0$ and increases when $\mathrm{d}P(x)>0$ 
+
+### Shallow Wave Equation
+
+Simplification of the two equations by assuming <u>shallow</u> wave (the wave is small and the <u>height change can be neglected</u>)  
+$$
+\left\{\begin{aligned} 
+&\frac{\mathrm{d}h}{\mathrm{d}t} + \frac{\mathrm{d}(hu)}{\mathrm{d}x} = 0 \longrightarrow \frac{\mathrm{d}h}{\mathrm{d}t} + \cancel{ u \frac{\mathrm{d}h}{\mathrm{d}x} } + h\frac{\mathrm{d}u}{\mathrm{d}x} = 0 \\
+&\frac{\mathrm{d}u}{\mathrm{d}t} = - \frac{1}{\rho}\frac{\mathrm{d}P}{\mathrm{d}x} 
+\end{aligned}
+\right.
+\begin{aligned} 
+&\stackrel{\mathrm{d}t}\longrightarrow \\
+&\stackrel{\mathrm{d}x}\longrightarrow 
+\end{aligned} 
+\left\{\begin{aligned} 
+&  \frac{\mathrm{d}^2 h}{\mathrm{d}t^2} + h \frac{\mathrm{d}^2}{\mathrm{d}x\mathrm{d}t} = 0\\
+&  \frac{\mathrm{d}^{2} u}{\mathrm{d} x \mathrm{d} t}=-\frac{1}{\rho} \frac{\mathrm{d}^{2} P}{\mathrm{d} x^{2}}
+\end{aligned}
+\right.
+$$
+Eliminate $u$ and formulate the **shallow wave equation** (indep on the velocity field)
+$$
+\Rightarrow \frac{\mathrm{d}^2h}{\mathrm{d}t^2}  = \frac{h}{\rho} \frac{\mathrm{d}^2P}{\mathrm{d}x^2} 
+$$
+
+### Finite Differencing
+
+#### Discretization
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220104173532131.png" alt="image-20220104173532131" style="zoom: 50%;" />
+
+#### Finite Difference
+
+Use the difference to approximate the derivative
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220104173745771.png" alt="image-20220104173745771" style="zoom:67%;" /> <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220104173759400.png" alt="image-20220104173759400" style="zoom:67%;" /> <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220104174219237.png" alt="image-20220104174219237" style="zoom: 67%;" />
+
+- Forward differencing (first order, 2nd order error)
+  $$
+  f\left(t_{0}+\Delta t\right)=f\left(t_{0}\right)+\Delta t \frac{\mathrm{d} f\left(t_{0}\right)}{\mathrm{d} t}+\frac{\Delta t^{2} \mathrm{d}^{2} f\left(t_{0}\right)}{2}+\cdots \Rightarrow
+  \frac{\mathrm{d}f(t_0)}{\mathrm{d}t} \approx \frac{f(t_0 + \Delta t)-f(t_0)}{\Delta t}
+  $$
+
+- Backward differencing (first order)
+  $$
+  f\left(t_{0}-\Delta t\right)=f\left(t_{0}\right)-\Delta t \frac{\mathrm{d} f\left(t_{0}\right)}{\mathrm{d} t}+\frac{\Delta t^{2} \mathrm{d}^{2} f\left(t_{0}\right)}{2}+\cdots \Rightarrow
+  \frac{\mathrm{d}f(t_0)}{\mathrm{d}t} \approx \frac{f(t_0 )-f(t_0- \Delta t)}{\Delta t}
+  $$
+
+- **Central differencing** (second order)
+  $$
+  \Rightarrow \frac{\mathrm{d}f(t_0)}{\mathrm{d}t} \approx \frac{f(t_0+\Delta t)-f(t_0-\Delta t)}{2\Delta t}
+  $$
+
+**Second-Order Derivatives** (central differencing in the fluid field)
+
+Applying central differencing twice to estimate <u>height</u> $\mathrm{d}^2h_i / \mathrm{d}t^2$ (Laplacian)
+$$
+\frac{\mathrm{d}^{2} h_{i}\left(t_{0}\right)}{\mathrm{d} t^{2}} \approx \frac{\frac{\mathrm{d} h_{i}\left(t_{0}+0.5 \Delta t\right)}{\mathrm{d} t}-\frac{\mathrm{d} h_{i}\left(t_{0}-0.5 \Delta t\right)}{\mathrm{d}t}}{\Delta t} \approx \frac{h_{i}\left(t_{0}+\Delta t\right)+h_{i}\left(t_{0}-\Delta t\right)-2 h_{i}\left(t_{0}\right)}{\Delta t^{2}}
+$$
+Also for <u>pressure</u> $\mathrm{d}^2P / \mathrm{d}x^2$
+$$
+\frac{\mathrm{d}^{2} P_{i}}{\mathrm{d} x^{2}} \approx \frac{\frac{\mathrm{d} P_{i+0.5}}{\mathrm{d} x}-\frac{\mathrm{d} P_{i-0.5}}{\mathrm{d} x}}{\Delta x} \approx \frac{P_{i+1}+P_{i-1}-2 P_{i}}{\Delta x^{2}}
+$$
+
+#### Discretized Shallow Wave Equation
+
+Want to obtain the height field in the next time step
+$$
+\frac{\mathrm{d}^2h}{\mathrm{d}t^2} = \frac{h}{\rho} \frac{\mathrm{d}^2 P}{\mathrm{d} x^2} 
+\Rightarrow
+h_{i}\left(t_{0}+\Delta t\right)=2 h_{i}\left(t_{0}\right)-h_{i}\left(t_{0}-\Delta t\right)+\frac{\Delta t^{2} h_{i}}{\Delta x^{2} \rho}\left(P_{i+1}+P_{i-1}-2 P_{i}\right)
+$$
+**Problem**: Volume loss or generation
+
+#### Volume Preservation
+
+We want the volume to stay the same
+
+Suppose $\sum h_i(t) = \sum h_i(t-\Delta t) = V$, but by using the formuation in the prev section, we will get
+$$
+\begin{aligned}
+\sum h_i(t+\Delta t) &= 2 \cancel{\sum h_i(t_0)}^V - \cancel{\sum h_i(t_0-t) }^V + \sum \frac{\Delta t^2 h_i}{\Delta x^2 \rho} (P_{i+1} + P_{i-1} -2P_i) \\
+&= V +  \sum \frac{\Delta t^2 h_i}{\Delta x^2 \rho} (P_{i+1} + P_{i-1} -2P_i)
+\end{aligned}
+$$
+and we cannot guarantee $ \sum \frac{\Delta t^2 h_i}{\Delta x^2 \rho} (P_{i+1} + P_{i-1} -2P_i)$ is 0
+
+##### Solution 1
+
+Modify scheme into: (not using $h_i$ as the coefficient => using $\frac{h_{i-1}+h_i}{2}$ and $\frac{h_{i+1}+h_i}{2} $ instead) 
+$$
+\begin{aligned}h_{i}\left(t_{0}+\Delta t\right)&=2 h_{i}\left(t_{0}\right)-h_{i}\left(t_{0}-\Delta t\right)+\frac{\Delta t^{2} h_{i}}{\Delta x^{2} \rho}\left(P_{i+1}+P_{i-1}-2 P_{i}\right)\\
+\Rightarrow 
+h_{i}\left(t_{0}+\Delta t\right) &=2 h_{i}\left(t_{0}\right)-h_{i}\left(t_{0}-\Delta t\right)+\frac{\Delta t^{2}}{\Delta x^{2} \rho}\left(\left(\frac{h_{i-1}+h_{i}}{2}\right)\left(P_{i-1}-P_{i}\right)+\left(\frac{h_{i+1}+h_{i}}{2}\right)\left(P_{i+1}-P_{i}\right)\right)
+\end{aligned}
+$$
+Can be understanded as the water exchanges between $h_i$ and $h_{i+1}$. The water flowing from the LHS will flow into the RHS => Volume preserved
+
+##### Solution 2
+
+Assuming $$h_i$$ in the right term is const
+$$
+\begin{aligned}
+\Rightarrow h_{i}\left(t_{0}+\Delta t\right) &=2 h_{i}\left(t_{0}\right)-h_{i}\left(t_{0}-\Delta t\right)+\frac{\Delta t^{2} H}{\Delta x^{2} \rho}\left(P_{i+1}+P_{i-1}-2 P_{i}\right)\\
+\text{So that } \sum h_{i}\left(t_{0}+\Delta t\right)&= V +\frac{\Delta t^{2} H}{\Delta x^{2} \rho}\sum\underbrace{\left((P_{i+1} -P_{i})+(P_{i-1}-P_{i})\right)}_{\text{Must be 0}}
+\end{aligned}
+$$
+
+### Pressure
+
+The pressure is related to the water **height**: $P_i = \rho g h_i$
+$$
+\Rightarrow h_{i}\left(t_{0}+\Delta t\right)=2 h_{i}\left(t_{0}\right)-h_{i}\left(t_{0}-\Delta t\right)+\underbrace{\frac{\Delta t^{2} H g}{\Delta x^{2}}}_{\alpha}\left(h_{i+1}\left(t_{0}\right)+h_{i-1}\left(t_{0}\right)-2 h_{i}\left(t_{0}\right)\right)
+$$
+Replace the term with a constant $\alpha$ 
+
+### Viscosity
+
+Viscosity tends to slow down the waves (Add a viscosity constant $\beta$: too high: not viscos; too low: not like fluid)
+$$
+h_{i}\left(t_{0}+\Delta t\right)=h_{i}\left(t_{0}\right)+\beta \underbrace{\left(h_{i}\left(t_{0}\right)-h_{i}\left(t_{0}-\Delta t\right)\right)}_{\text{Momentum here}}+\alpha\left(h_{i+1}\left(t_{0}\right)+h_{i-1}\left(t_{0}\right)-2 h_{i}\left(t_{0}\right)\right)\\
+$$
+
+### Boundary Conditions
+
+- **Dirichlet** Boundary: The boundary height $H_{i+1}$ is constant (open boundary)
+
+  <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220105171719986.png" alt="image-20220105171719986" style="zoom:67%;" />
+  $$
+  h_{i+1} - h_i + h_{i-1} - h_i = H_{i+1} - h_i + h_{i-1} - h_i
+  $$
+
+- **Neumann** Boundary: specifies the boundary <u>derivatives</u>. For example, a <u>zero-derivative</u> boundary (no water exchange) means $h_{i+1}\equiv h_i$ (closed boundary)
+
+  <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220105172434946.png" alt="image-20220105172434946" style="zoom:67%;" />
+  $$
+  h_{i+1} - h_i + h_{i-1} -h_i = h_{i-1} - h_i
+  $$
+  
+
+#### Algorithm with Neumann Boundary
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220105172628214.png" alt="image-20220105172628214" style="zoom:67%;" /> – to 3D – <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220105172707786.png" alt="image-20220105172707786" style="zoom:67%;" />
+
+## Two-way Coupling
+
+The coupling will be two ways: between liquid->solid and solid->liquid (also can be bubbles / soft solids / …)
+
+**Key**: how to expel water out of the gray cell regions
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220105173316343.png" alt="image-20220105173316343" style="zoom:40%;" />  <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220105173333356.png" alt="image-20220105173333356" style="zoom: 40%;" />
+
+### Virtual Height
+
+**Idea**: Set up a virtual height $v_i$ so that $h_i^{\text{real\_new}} = h_i - e_i$
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220105173538947.png" alt="image-20220105173538947" style="zoom:67%;" />
+$$
+\left\{\begin{aligned}
+\text{Left: }  \ & h_{i}-e_{i}=h_{i}+\beta\left(h_{i}-h_{i}^{\text {old }}\right)+\alpha\left(\nu_{i+1}+h_{i+1}+h_{i-1}-2\nu_{i}-2 h_{i}\right)=h_{i}^{\text {new }}+\alpha\left(\nu_{i+1}-2 \nu_{i}\right)\\
+\text{Right: } \ & h_{i+1}-e_{i+1}=h_{i+1}+\beta\left(h_{i+1}-h_{i+1}^{\text {old }}\right)+\alpha\left(h_{i+2}+\nu_{i}+h_{i}-2 \nu_{i+1}-2 h_{i+1}\right)=h_{i+1}^{\text {new }}+\alpha\left(\nu_{i}-2 \nu_{i+1}\right)
+\end{aligned}\right.
+$$
+
+### Poisson’s Equation
+
+The outcome is Poisson’s equation, with $\nu_i$ and $\nu_{i+1}$ being unknowns 
+$$
+\begin{aligned}
+2 \nu_{i}-\nu_{i+1} &=\frac{1}{\alpha}\left(h_{i}^{\text{new}}-h_{i}+e_{i}\right)=b_{i} \\
+-\nu_{i}+2 \nu_{i+1} &=\frac{1}{\alpha}\left(h_{i+1}^{\text{new}}-h_{i+1}+e_{i+1}\right)=b_{i+1}
+\end{aligned}
+$$
+Regard as a Laplacian operator for every equation ($\nu_{i-1} $ & $\nu_{i+2}$ are all 0, no virtual height)
+$$
+\begin{bmatrix} 2 &-1 \\-1 & 2 \end{bmatrix} 
+\begin{bmatrix}\nu_i \\\nu_{i+1} \end{bmatrix} = 
+\begin{bmatrix} b_i \\ b_{i+1} \end{bmatrix}
+\Rightarrow
+\left[\begin{array}{cccc}
+1 & & & \\
+-1 & 2 & -1 &  \\
+ & -1 & 2 & -1 \\
+ & & 1 & 1
+\end{array}\right]=\left[\begin{array}{c}
+\nu_{i-1} \\
+\nu_{i} \\
+\nu_{i+1} \\
+\nu_{i+2}
+\end{array}\right]=\left[\begin{array}{c}
+0 \\
+b_{i} \\
+b_{i+1} \\
+0
+\end{array}\right]
+$$
+
+### Algorithm
+
+**Process**: Set <u>boundary condition</u> -> <u>Mask</u> (which grids need solving) -> `PCG_Solve()` to retrun $\nu$ -> Update the <u>height field</u> (Usually need to multiply a factor, prevent too large waves when dragging the cube <- explicit’s unstability) 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220105174829562.png" alt="image-20220105174829562" style="zoom:67%;" />
+
+### Rigid Body Update
+
+Estimate the floating (buoyancy) force by the actual water expelled in every column
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220105211306589.png" alt="image-20220105211306589" style="zoom:67%;" />
+$$
+f_i = \rho g \Delta x(h_i - h_i^{\text{new}})\quad& \text{in 2D}\\
+f_{i,j} = \rho g \Delta A (h_{i,j} - h_{i,j}^{\text{new}})\quad& \text{in 3D}
+$$
+Also need to consider rotation => torque
