@@ -2628,3 +2628,243 @@ f_i = \rho g \Delta x(h_i - h_i^{\text{new}})\quad& \text{in 2D}\\
 f_{i,j} = \rho g \Delta A (h_{i,j} - h_{i,j}^{\text{new}})\quad& \text{in 3D}
 $$
 Also need to consider rotation => torque
+
+
+
+# Lecture 11 Eulerian Fluids
+
+## A Grid Representation and Finite Differencing
+### A Regular Grid Representation
+
+Storing **physical quantities** over a grid => Fields 
+
+- **Scalars**: Density/color, Pressure, Temperature, …
+- **Vectors**: Velocities
+
+### Finite Differencing on Grid
+
+Grid is good for <u>central differencing</u> 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220110231458008.png" alt="image-20220110231458008" style="zoom:50%;" /> <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220110231533171.png" alt="image-20220110231533171" style="zoom:50%;" />
+$$
+\left.\begin{aligned}
+\frac{\partial f_{i+0.5,j}}{\partial x} \approx  \frac{f_{i+1,j}-f_{i,j}}{h}\\
+\frac{\partial f_{i-0.5,j}}{\partial x} \approx  \frac{f_{i,j}-f_{i-1,j}}{h}
+\end{aligned}\right\}
+\Rightarrow  
+\frac{\partial^{2} f_{i, j}}{\partial x^{2}} \approx \frac{\frac{\partial f_{i+0.5, j}}{\partial x}-\frac{\partial f_{i-0.5, j}}{\partial x}}{h} \approx \frac{f_{i-1,j} + f_{i+1,j} - 2f_{i,j}}{h^2} 
+$$
+(Same for the $y$ direction)
+
+#### Discretized Laplacian
+
+$$
+\Delta f_{i, j}=\frac{\partial^{2} f_{i, j}}{\partial x^{2}}+\frac{\partial^{2} f_{i, j}}{\partial y^{2}} \approx \frac{f_{i-1, j}+f_{i+1, j}+f_{i, j-1}+f_{i, j+1}-4 f_{i, j}}{h^{2}}
+$$
+
+#### Boundary Conditions 
+
+The boundary condition specifies $f_{i-1,j}$ if it’s outside
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220111163018901.png" alt="image-20220111163018901" style="zoom:50%;" />
+
+- **Dirichlet**: $f_{i-1,j} = C$ 
+  $$
+  \Delta f_{i, j} \approx \frac{C+f_{i+1, j}+f_{i, j-1}+f_{i, j+1}-4 f_{i, j}}{h^{2}}
+  $$
+
+- **Neumann**: $f_{i-1,j} =f_{i,j}$ 
+  $$
+  \Delta f_{i, j} \approx \frac{f_{i+1, j}+f_{i, j-1}+f_{i, j+1}-3 f_{i, j}}{h^{2}}
+  $$
+
+#### Example: Laplace’s Equation
+
+With the grid, discretize Laplace’s equation: $\Delta f = 0$ (every grid has a function $f$, every )
+$$
+f_{i-1, j} + f_{i+1, j}  + f_{i,j-1} + f_{i,j+1} - 4f_{i,j} = 0
+$$
+Note: <u>at least one condition should be Dirichlet condition</u> (avoid inifinite solutions)
+
+**Laplacian Smoothing** is basically <u>average</u> the self value with neighbors => the distribution will be smoother and smoother
+
+(for simulation, time can be added along the $\alpha$ term)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220111172451861.png" alt="image-20220111172451861" style="zoom:67%;" />
+
+The process of applying Laplacian smoothing is called **diffusion**
+
+### Staggered Grid
+
+#### Problem with Central Differencing
+
+Central differencing gives the derivative in the middle
+
+- The cell doesn’t exist at $(i+0.5, j)$
+- To get $\frac{\partial f_{i,j}}{\partial x}$ we need $f_{i-1,j}$ and $f_{i+1,j}$ => weird because $f_{i,j}$ is unused
+
+#### Solution: Staggered Grid
+
+We define some physical quantities on faces, specifically velocities
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220111173625538.png" alt="image-20220111173625538" style="zoom:67%;" />
+
+- The **x**-part of the velocity is defined on **vertical** faces
+- The **y**-part of the velocity is defined on **horizonal** faces
+
+They represent the <u>flow speed between two cells</u>, at cell $(i,j)$: $u_{i+1,j} + v_{i,j+1} - u_{i,j} - v_{i,j}$ 
+
+### Divergence-Free Condition
+
+<u>No volume change</u> is equal to say the fluid is **incompressible** (**divergence-free velocity field**)
+$$
+u_{i+1,j} + v_{i,j+1} - u_{i,j} - v_{i,j} = 0  \Rightarrow 
+\div\ \vb{u}_{i,j}= \frac{\partial u_{i,j}}{\partial x} + \frac{\partial v_{i,j}}{\partial y} \approx \frac{u_{i+1,j} - u_{i,j}}{h} + \frac{v_{i,j+1}-v_{i,j}}{h} = 0
+$$
+
+### Bilinear Interpolation
+
+Use bilinear interpolation to interpolate <u>physical quantities</u> (3D: trilinear)	$i\leftarrow [x]\quad j\leftarrow [y]$ 
+$$
+f(\vb{x}) \leftarrow (i+1-x)(j+1-y)\ f_{i,j}\ + (x-i)(j+1-y)\ f_{i+1,j}\ + (i+1-x)(y-j)\ f_{i,j+1}\ +(x-i)(y-j)\ f_{i+1,j+1}
+$$
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220111174339305.png" alt="image-20220111174339305" style="zoom:67%;" /><img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220111174745201.png" alt="image-20220111174745201" style="zoom:67%;" />
+
+Interpolate <u>staggered velocities</u> as well ($x\leftarrow x-0.5$)
+$$
+u(\vb{x}) \leftarrow (i+1-x)(j+1-y)\ u_{i,j}\ + (x-i)(j+1-y)\ u_{i+1,j}\ + (i+1-x)(y-j)\ u_{i,j+1}\ +(x-i)(y-j)\ u_{i+1,j+1}
+$$
+
+
+## Incompressible, Viscous Navier Stokes’ Equations
+
+### Equation Fomulation
+
+$$
+\text{Incompressibility }& \div \ \vb{u} = 0\\
+\text{Momentum} & \frac{\partial \mathbf{u}}{\partial t}=\mathbf{g}-(\mathbf{u} \cdot \nabla) \mathbf{u}+\mu \Delta \mathbf{u}-\nabla \boldsymbol{p}
+$$
+
+($\vb{g} $ - ext. acceleration; $(\vb{u}\cdot \grad)\vb{u}$ - advection; $\mu\Delta \vb{u}$ - (Laplacian) diffusion; $\grad p$ - Internal pressure)
+
+**Method of Characteristics**: solving a long PDE in steps
+
+- Step 1: Update $\vb{u}$ by solving $\partial \vb{u}/\partial t = \vb{g}$
+- Step 2: Update $\vb{u}$ by solving $\partial \vb{u}/\partial t = -(\vb{u}\cdot \grad)\vb{u}$ 
+- Step 3: Update $\vb{u}$ by solving $\partial \vb{u}/\partial t = v\Delta \vb{u}$ 
+- Step 4: Update $\vb{u}$ by solving $\partial \vb{u}/\partial t = -\grad p$ 
+
+#### Step 1: External Acceleration
+
+Straightforward, just add acceleration to $u$ and $v$ 
+
+For gravity as ext. acc.: ($v$ for verticle velocities <- affected by gravity force)
+$$
+v_{i,j}^{\text{new}} \leftarrow v_{i,j} + \Delta t g
+$$
+
+#### Step 2: Advection
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220112163322800.png" alt="image-20220112163322800" style="zoom:67%;" />
+$$
+(\mathbf{u} \cdot \nabla) \mathbf{u}=u \cdot \frac{\partial u}{\partial x}+v \cdot \frac{\partial v}{\partial y}
+$$
+Solving in an Eulerian way can be <u>unstable</u> => use the real meaning of advection: carry physical quantities by velocity (this problem does not exist in Lagrangian methods) => **Semi-Lagrangian Method**
+
+##### Semi-Lagrangian Method
+
+Trace a virtual particle <u>backward</u> over time
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220112171356104.png" alt="image-20220112171356104" style="zoom:67%;" /> <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220112171856521.png" alt="image-20220112171856521" style="zoom:67%;" />
+
+Steps: (same for $\vb{v}$ (verticle))
+
+- Define $\vb{x}_0 \leftarrow (i-0.5, j)$
+- Compute $\vb{u(x_0)}$
+- $\vb{x}_1\leftarrow \vb{x_0} -\Delta t\ \vb{u(x_0)}$
+- Compute $\vb{u(x_1)}$
+- $u^{\text{new}}_{i,j}\leftarrow u(\vb{x}_1)$ 
+
+Note: if the velocities are staggered, we need to do <u>staggered bilinear interpolation</u>
+
+=> <u>Subdivide</u> the time step for better tracing
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220112171941434.png" alt="image-20220112171941434" style="zoom:67%;" />
+
+Steps: (Make $\Delta t \rightarrow \Delta t/4$ => do 4 times of updates in an original timestep)
+
+- Define $\vb{x}_0\leftarrow(i-0.5, j)$
+- Compute $\vb{u(x}_0)$
+- $\vb{x}_1←\vb{x}_0-\frac{1}{3} \Delta t\ \vb u(\vb{x}_0)$
+- Compute $\vb{u(x}_1)$ 
+- $\vb{x}_2\leftarrow \vb x_1- \frac{1}{2} \Delta t\ \vb{u}(\vb{x}_1)$
+- Compute $\vb{u(x}_2)$
+- $\vb x_3\leftarrow \vb{x}_2-\frac{1}{2} \Delta t\ \vb{u(x}_2)$
+- Compute $\vb{u(x}_3)$
+- $u_{i,j}^{\text{new}}\leftarrow u(\vb{x}_3)$
+
+#### Step 3: Diffusion
+
+The laplacian of velocity ($u$ and $v$)
+$$
+\begin{aligned}
+&u_{i, j}^{\text {new }} \leftarrow u_{i, j}+{v \Delta t} \frac{u_{i-1, j}+u_{i+1, j}+u_{i, j-1}+u_{i, j+1}-4 u_{i, j}}{h^{2}} \\
+&v_{i, j}^{\text {new }} \leftarrow v_{i, j}+v \Delta t \frac{v_{i-1, j}+v_{i+1, j}+v_{i, j-1}+v_{i, j+1}-4 v_{i, j}}{h^{2}}
+\end{aligned}
+$$
+Note: if $\nu \Delta t$ is large: can be <u>unstable</u> => use <u>smaller sub-steps</u> / <u>implicit integration</u>
+
+#### Step 4: Pressure Projection
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220112173410745.png" alt="image-20220112173410745" style="zoom:67%;" />
+$$
+\begin{aligned}
+&u_{i, j}^{n e w} \leftarrow u_{i, j}-\frac{\Delta t}{h}\left(p_{i, j}-p_{i-1, j}\right) \\
+&v_{i, j}^{n e w} \leftarrow v_{i, j}-\frac{\Delta t}{h}\left(p_{i, j}-p_{i, j-1}\right)
+\end{aligned}
+$$
+The **pressure** is caused by <u>incompressibility</u> => By updating the pressure, we should achieve <u>divergence free condition</u>: $\div\ \vb{u}^{\text{new} }= 0$ 
+$$
+u_{i+1,j} + v_{i,j+1} - u_{i,j} - v_{i,j} = 0 \\  \Rightarrow 
+u_{i+1, j}-\frac{\Delta t\left(p_{i+1, j}-p_{i, j}\right)}{h}+v_{i, j+1}-\frac{\Delta t\left(p_{i, j+1}-p_{i, j}\right)}{h} 
+-u_{i, j}-\frac{\Delta t\left(p_{i, j}-p_{i-1, j}\right)}{h}-v_{i, j}-\frac{\Delta t\left(p_{i, j}-p_{i, j-1}\right)}{h}=0
+$$
+Eventually got a **Poisson equation**:
+$$
+4p_{i.j} - p_{i-1,j} - p_{i+1,j} -p_{i,j-1} - p_{i,j+1} = h(-u_{i+1,j} - v_{i,j+1} + u_{i,j} + v_{i,j}) 
+$$
+With **bc**: 
+
+- Dirichlet (open): $p_{i-1,j} = P$
+- Neumann (close): $p_{i-1,j} = p_{i,j}$ 
+
+Once solve $p$ => update $\vb{u}$ and done
+
+## Air and Smoke
+
+### Air Simulation
+
+Steps: (can be used in underwater as well)
+
+- Step 1: Update **flow** (velocity field) $\vb{u}$
+- Step 2: Use <u>semi-Lagrangian</u> advect **all of the other physical quantites** (density / temperature / …)
+
+Typically use <u>Dirichlet boundaries for an open space</u> and <u>Neumann for a container</u>
+
+### Water Simulation
+
+Water simulation also involves air-water interface. Water doesn’t occupy the whole space => Need to solve the air-water boundary
+
+**Representations**:
+
+- <u>Volume-of-fluid (VOF)</u> (every grid has a percentage of fluid and air) => not accurate, not tells the interface
+- A <u>signed distance function</u> defined over grid
+
+**Advect**: (needs corrections)
+
+- Semi-Lagrangian (volume loss)
+- Level set method (spec. to signed distance function update) (volume loss)
+
+Volume loss affects significantly when perturbation is large
+
+=> if need to create a mesh from grid for rendering: need <u>marching cube</u> 
