@@ -2868,3 +2868,167 @@ Water simulation also involves air-water interface. Water doesn’t occupy the w
 Volume loss affects significantly when perturbation is large
 
 => if need to create a mesh from grid for rendering: need <u>marching cube</u> 
+
+
+
+# Lecture 12 SPH and Position-Based Fluids
+
+## A SPH Model
+
+A **(Lagrangian) particle** system: each water molecule is a <u>particle</u> with <u>physical quantities</u> attached, such as position $\vb{x}_i$, velocity $\vb{v}_i$, and mass $m_i$
+
+=> Need conversion (offline) to visualize
+
+### Smoothed Particle Models
+
+#### A Simple Model
+
+**Smoothed Interpolation**: Suppose each particle $j$ has a **physical quantity** $A_j$ => interpolate (e.g., average) from the surrounding several particles
+$$
+A_{i}^{\text {smooth }}=\frac{1}{n} \sum_{j} A_{j} \quad \text { For }\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|<R
+$$
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220118235410027.png" alt="image-20220118235410027" style="zoom:50%;" />
+
+**Problem**: Not considered the distribution of the particles (if sampled from some concentrated region, the results will be biased)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220118235610302.png" alt="image-20220118235610302" style="zoom: 50%;" />
+
+#### A Better Model
+
+Assume each one represents a **volume** $V_j$ (regarded as the **weight**, suppose unit particles)
+$$
+A_{i}^{\text {smooth }}=\frac{1}{n} \sum_{j} V_j A_{j} \quad \text { For }\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|<R
+$$
+**Problem**: The function is not <u>smooth</u> (ie. if the particle has some movement, we don’t want too much changes in a small step (here red->green: 7->9))
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220119000130143.png" alt="image-20220119000130143" style="zoom:50%;" />
+
+#### The Final Solution
+
+Consider the **distance** from the particle as another **weight** ($W_{ij}$ - The **smoothing kernel**)
+$$
+A_{i}^{\text {smooth }}=\frac{1}{n} \sum_{j}V_j A_{j} W_{ij} \quad \text { For }\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|<R
+$$
+When $\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|$ is large, $W_{ij}$ is small; when $\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\|$ is small, $W_{ij}$ is large
+
+### Particle Volume Estimation
+
+For each volume: $V_i = m_i / \rho_i$ (the density is the particle distribution density not the density it self) 
+$$
+\rho_i^{\text{smooth}} = \sum_j V_j\rho_j W_{ij} = \sum_j m_jW_{ij}\quad\Rightarrow V_i = \frac{m_i}{\rho_i^{\text{smooth}}} = \frac{m_i}{\sum_j m_j W_{ij}}\\
+\Rightarrow A_{i}^{\text {smooth }}=\sum_{j} \frac{m_{j}}{\sum_{k} m_{k} W_{j k}} A_{j} W_{i j}
+$$
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220119000937353.png" alt="image-20220119000937353" style="zoom:50%;" />
+
+**Advantages** of Smoothed Interpolation:
+
+- **Gradient**
+  $$
+  A_{i}^{\text{smooth} } = \sum_j V_jA_jW_{ij} \Rightarrow \grad A_{i}^{\text{smooth} } = \sum_j V_jA_j \grad W_{ij}
+  $$
+
+- **Laplacian**
+  $$
+  A_{i}^{\text{smooth} } = \sum_j V_jA_jW_{ij} \Rightarrow \Delta A_{i}^{\text{smooth} } = \sum_j V_jA_j \Delta W_{ij} 
+  $$
+
+### A Smoothed Kernel Example
+
+$$
+W_{i j}=\frac{3}{2 \pi h^{3}} \begin{cases}\frac{2}{3}-q^{2}+\frac{1}{2} q^{3} & (0 \leq q<1) \\ \frac{1}{6}(2-q)^{3} & (1 \leq q<2) \\ 0 & (2 \leq q)\end{cases} 
+\ ; \quad
+q = \frac{\| \vb{x}_i - \vb{x}_j \|}{h}  
+$$
+
+($h$ - Smoothing length, actually a normalized unit length)
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220119002342933.png" alt="image-20220119002342933" style="zoom:67%;" />
+
+**Kernel Derivatives**
+
+- **Gradient** at particle $i$ (vector)
+  $$
+  \nabla_{i} W_{i j}=\left[\begin{array}{c}
+  \frac{\partial W_{i j}}{\partial x_{i}} \\
+  \frac{\partial W_{i j}}{\partial y_{i}} \\
+  \frac{\partial W_{i j}}{\partial z_{i}}
+  \end{array}\right]=\frac{\partial W_{i j}}{\partial q} \nabla_{i} q=\frac{\partial W_{i j}}{\partial q} \frac{\mathbf{x}_{i}-\mathbf{x}_{j}}{\left\|\mathbf{x}_{i}-\mathbf{x}_{j}\right\| h}
+  \ ;
+  \quad
+  
+  \frac{\partial W_{i j}}{\partial q}=\frac{3}{2 \pi h^{3}} \begin{cases}-2 q+\frac{3}{2} q^{2} & (0 \leq q<1) \\ -\frac{1}{2}(2-q)^{2} & (1 \leq q<2) \\ 0 & (2 \leq q)\end{cases}
+  $$
+
+- **Laplacian** at particle $i$ (scalar)
+  $$
+  \nabla_{i} W_{i j}=\frac{\partial^{2} W_{i j}}{\partial x_{i}^{2}}+\frac{\partial^{2} W_{i j}}{\partial y_{i}^{2}}+\frac{\partial^{2} W_{i j}}{\partial z_{i}^{2}}=\frac{\partial^{2} W_{i j}}{\partial q^{2}} \frac{1}{h^{2}}+\frac{\partial W_{i j}}{\partial q} \frac{2}{h}
+  \ ;
+  \quad
+  
+  \frac{\partial^{2} W_{i j}}{\partial q^{2}}=\frac{3}{2 \pi h^{3}} \begin{cases}-2+3 q & (0 \leq q<1) \\ 2-q & (1 \leq q<2) \\ 0 & (2 \leq q)\end{cases}
+  $$
+  
+
+## SPH-Based Fluids
+
+### Fluid Dynamics
+
+- **Gravity Force**: $\vb F_i^{\text{gravity}} = m_i \vb g$ 
+
+- **Pressure Force**
+
+  - Pressure is related to the <u>density</u>: 
+
+    - The density of Particle i: $\rho_i = \sum_j m_j W_{ij}$ 
+    - Convert into pressure (empirical): $P_i = k\left((\rho_i / \rho_{\text{const}})^7 - 1 \right)$ 
+
+  - Pressure force depends on the <u>difference</u> of pressure:
+
+    - Mathematically, the difference of pressure => Gradient of pressure: $\vb{F}_i^{\text{Pres}} = - V_i \grad_i P^{\text{smooth}}$ 
+    - Assume the pressure is also smoothly represented: $P_i^{\text{smooth}} = \sum_j V_j P_j W_{ij}$ 
+    - So: $\vb{F}^{\text{Pres}}_{i} = -V_i \sum_j V_jP_j \grad_i W_{ij}$ 
+
+    <img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220119093759027.png" alt="image-20220119093759027" style="zoom:50%;" />
+
+- **Viscosity Force**: Particles should move together in the same velocity => minimize the difference between the particle velocity and the velocities of the neighbors
+
+  - Mathematically: $\vb{F}_i^{\text{viscosity}} = -\nu m_i \Delta _i \vb{v}^{\text{smooth}}$ 
+  - The velocity is smoothly represented: $\vb{v}_i^{\text{smooth}} = \sum_j V_j \vb{v}_j W_{ij}$ 
+  - So: $\vb{F}^{\text{viscosity}}_i = -\nu m_i\sum_jV_j\vb{v}_j \Delta _i W_{ij}$ (the velocity has 3 dim so need to sum up the different dir vel)
+
+### Algorithm
+
+- For every particle i
+  - Compute its neighborhood set
+  - Using the neighborhood, compute:
+    - `Force = 0`
+    - `Force + = The gravity force`
+    - `Force + = The pressure force`
+    - `Force + = The viscosity force`
+  - Update `vi = vi + t * Force / mi`;
+  - Update `xi = xi + t * vi`;
+
+**Bottleneck**: compute the <u>neighborhood</u> (too much particles)
+
+​	**Exhaustive Neighborhood Search**: Search over every particle pair ($\mathcal O (N^2) $); 10M particles => 100 trillian pairs
+
+​	Better solution: Spatial partition
+
+### Spatial Partition
+
+- Separate the space into cells
+- Each cell stores the particles in it
+- To find the neighborhood of i, just look at the surrounding cells 
+
+<img src="https://cdn.jsdelivr.net/gh/Nikucyan/MD_IMG//img/image-20220119102740408.png" alt="image-20220119102740408" style="zoom:50%;" />
+
+For <u>not uniformly dirstributed</u> particles: Octree  / Binary Spatial Partitioning tree / …
+
+Adapted methods …
+
+### Fluid Display
+
+Need to reconstruct the water surface from particles
+
+Ball distance function / …
+
